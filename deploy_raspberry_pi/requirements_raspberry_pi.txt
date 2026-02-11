@@ -1,0 +1,19 @@
+# 树莓派专用依赖
+# 优化版本 - 性能友好，内存使用量低
+
+# 核心依赖
+torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cpu
+ultralytics==8.3.0
+opencv-python==4.8.1.78
+
+# 可选：树莓派摄像头支持
+# 取消注释以下行来安装树莓派 CSI 摄像头支持
+# picamera2>=0.3.0
+
+# GUI 支持（可选 - Windows 部署时需要）
+# pillow>=10.0.0
+
+# 工具
+numpy>=1.24.0
+pyyaml>=6.0
