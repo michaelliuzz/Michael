@@ -1,6 +1,6 @@
 # 🍓 树莓派 YOLO11 人员检测部署包
 
-快速部署 YOLO11 人员检测到树莓派 4B+。
+快速部署 YOLO11 人员检测到树莓派 5。
 
 ---
 
@@ -151,7 +151,7 @@ python3 src/detect_camera_cli.py --model best.pt --skip-frames 2 --no-fps
 
 ## 🔌 硬件要求
 
-- **树莓派**: 4B 或更高版本（推荐 4GB+ RAM）
+- **树莓派**: 5 或更高版本
 - **摄像头**: Raspberry Pi Camera Module 2 或 USB 摄像头
 - **电源**: 5V/3A+
 - **存储**: 32GB+ MicroSD 卡
@@ -207,7 +207,7 @@ scp -r pi@your-pi-ip:~/yolo-detection/detection_results ./
 
 1. 检查 `test_camera.py` 是否能拍照
 2. 查看 `detection.log` 中的错误信息
-3. 确保 Python 3.8+ 已安装
+3. 确保 Python 3.11+ 已安装
 4. 检查依赖: `pip3 list | grep torch`
 
 ---
