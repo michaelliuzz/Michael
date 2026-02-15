@@ -213,4 +213,4 @@ scp -r pi@your-pi-ip:~/yolo-detection/detection_results ./
 ---
 
 **最后更新**: 2026年2月15日  
-**部署状态**: ✅ 适配树莓派 4B+
+**部署状态**: ✅ 适配树莓派 5
