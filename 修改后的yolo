@@ -1,0 +1,62 @@
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+# ========== 参数 ==========
+MODEL_PATH = "best.pt"   # 或 best_person.pt
+GRID_SIZE = 20           # 一个栅格 = 20x20 像素
+OBSTACLE_CLASSES = ["person", "rock", "tree"]  # 你后面可以改
+
+# ========== 1. 加载模型 ==========
+model = YOLO(MODEL_PATH)
+
+# ========== 2. 打开摄像头 ==========
+from picamera2 import Picamera2
+import time
+
+picam2 = Picamera2()
+config = picam2.create_preview_configuration(
+    main={"format":"RGB888","size":(640,480)}
+)
+picam2.configure(config)
+picam2.start()
+
+time.sleep(1)
+frame = picam2.capture_array()
+picam2.stop()
+
+if frame is None:
+    raise RuntimeError("摄像头读取失败")
+
+h, w, _ = frame.shape
+grid_h = h // GRID_SIZE
+grid_w = w // GRID_SIZE
+
+# ========== 3. 初始化栅格地图 ==========
+# 0 = 可通行，1 = 障碍物
+grid = np.zeros((grid_h, grid_w), dtype=np.uint8)
+
+# ========== 4. YOLO 推理 ==========
+results = model(frame, verbose=False)[0]
+
+for box in results.boxes:
+    cls_id = int(box.cls[0])
+    cls_name = model.names[cls_id]
+
+    if cls_name not in OBSTACLE_CLASSES:
+        continue
+
+    x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+    gx1 = x1 // GRID_SIZE
+    gy1 = y1 // GRID_SIZE
+    gx2 = x2 // GRID_SIZE
+    gy2 = y2 // GRID_SIZE
+
+    grid[gy1:gy2+1, gx1:gx2+1] = 1
+
+# ========== 5. 输出结果 ==========
+print("栅格地图大小:", grid.shape)
+print(grid)
+np.save("grid.npy",grid)
+print("Saved grid to grid.npy")
