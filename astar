@@ -1,0 +1,136 @@
+import numpy as np
+import heapq
+
+# ===== 1) 读取栅格地图 =====
+grid = np.load("grid.npy")
+H, W = grid.shape
+
+# ===== 2) 设定起点终点（先用简单默认）=====
+# 你可以先这样：起点在底部中间，终点在顶部中间
+start = (H - 2, W // 2)
+goal  = (1,     W // 2)
+
+# 如果起点/终点落在障碍物上，自动找附近最近的可走点
+def nearest_free(grid, p, radius=10):
+    x0, y0 = p
+    if grid[x0, y0] == 0:
+        return p
+    for r in range(1, radius + 1):
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                x, y = x0 + dx, y0 + dy
+                if 0 <= x < grid.shape[0] and 0 <= y < grid.shape[1]:
+                    if grid[x, y] == 0:
+                        return (x, y)
+    return p
+
+start = nearest_free(grid, start)
+goal  = nearest_free(grid, goal)
+
+# ===== 3) A* 基本函数 =====
+def heuristic(a, b):
+    # 曼哈顿距离，适合4邻域
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+def astar(grid, start, goal, allow_diag=False):
+    H, W = grid.shape
+
+    if allow_diag:
+        # 8邻域（对角可走）
+        moves = [(-1,0),(1,0),(0,-1),(0,1),
+                 (-1,-1),(-1,1),(1,-1),(1,1)]
+        step_cost = lambda dx, dy: 1.4142 if dx != 0 and dy != 0 else 1.0
+    else:
+        # 4邻域
+        moves = [(-1,0),(1,0),(0,-1),(0,1)]
+        step_cost = lambda dx, dy: 1.0
+
+    open_heap = []
+    heapq.heappush(open_heap, (0.0, start))
+
+    came_from = {}
+    g_score = {start: 0.0}
+    closed = set()
+
+    while open_heap:
+        _, current = heapq.heappop(open_heap)
+
+        if current in closed:
+            continue
+        closed.add(current)
+
+        if current == goal:
+            # 回溯路径
+            path = [current]
+            while current in came_from:
+                current = came_from[current]
+                path.append(current)
+            path.reverse()
+            return path
+
+        cx, cy = current
+        for dx, dy in moves:
+            nx, ny = cx + dx, cy + dy
+            if not (0 <= nx < H and 0 <= ny < W):
+                continue
+            if grid[nx, ny] != 0:
+                continue  # 障碍不能走
+
+            tentative = g_score[current] + step_cost(dx, dy)
+            neighbor = (nx, ny)
+            if neighbor not in g_score or tentative < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative
+                f = tentative + heuristic(neighbor, goal)
+                heapq.heappush(open_heap, (f, neighbor))
+
+    return None
+
+# ===== 4) 运行 A* =====
+path = astar(grid, start, goal, allow_diag=False)
+
+print("Grid shape:", grid.shape)
+print("Start:", start, "Goal:", goal)
+
+if path is None:
+    print("❌ 无路径（可能被障碍物完全挡住了）")
+else:
+    print("✅ 找到路径，长度:", len(path))
+    print("Path head:", path[:10], "...")
+    print("Path tail:", path[-10:])
+
+    # ===== 5) 文本可视化（把路径打到字符地图里）=====
+    # 注意：太大就只截一块区域看
+    vis = np.array(grid, dtype=np.int32)
+
+    for (x, y) in path:
+        vis[x, y] = 2  # 路径标记
+    sx, sy = start
+    gx, gy = goal
+    vis[sx, sy] = 3
+    vis[gx, gy] = 4
+
+    # 截取中间区域展示，避免输出爆炸
+    x_min = max(0, min(sx, gx) - 15)
+    x_max = min(H, max(sx, gx) + 15)
+    y_min = max(0, min(sy, gy) - 15)
+    y_max = min(W, max(sy, gy) + 15)
+
+    print("\nLegend: 0=free '.'  1=obs '#'  2=path 'o'  3=start 'S'  4=goal 'G'")
+    for i in range(x_min, x_max):
+        line = []
+        for j in range(y_min, y_max):
+            v = vis[i, j]
+            if v == 0:
+                line.append(".")
+            elif v == 1:
+                line.append("#")
+            elif v == 2:
+                line.append("o")
+            elif v == 3:
+                line.append("S")
+            elif v == 4:
+                line.append("G")
+            else:
+                line.append("?")
+        print("".join(line))
