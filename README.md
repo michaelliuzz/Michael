@@ -33,9 +33,7 @@
 
 使用 **YOLO11**（`best.pt` / `best_person.pt`）对摄像头帧进行推理，检测目标包括：
 - `person`（人体）
-- `rock`（岩石）
-- `tree`（树木）
-- 以及其他自定义障碍类别
+- `collapsed`（障碍）
 
 ### 2. 检测核心流程（`修改后的yolo`）
 
@@ -49,8 +47,9 @@ frame = picam2.capture_array()   # 输出 RGB888 格式，尺寸 640×480
 
 # 3. 执行 YOLO 推理，获取所有检测框
 results = model(frame, verbose=False)[0]
+检测框分为车载端的人和高空拍摄的障碍物
 
-# 4. 遍历检测结果，将目标区域映射到栅格坐标
+# 4. 遍历障碍物检测结果，将目标区域映射到栅格坐标
 GRID_SIZE = 20  # 每个格子对应 20×20 像素
 for box in results.boxes:
     cls_name = model.names[int(box.cls[0])]
@@ -96,13 +95,13 @@ np.save("grid.npy", grid)
 ```python
 grid = np.load("grid.npy")   # 由 YOLO 检测步骤生成
 H, W = grid.shape
-# 0 = 可通行，1 = 障碍物（人体 / 障碍物区域）
+# 0 = 可通行，1 = 障碍物（障碍物区域）
 ```
 
 ### 2. 确定起点与终点
 
 ```python
-start = (H - 2, W // 2)   # 默认：底部中间（机器人当前位置）
+start = (H - 2, W // 2)   # 默认：底部中间（车当前位置）
 goal  = (1,     W // 2)   # 默认：顶部中间（目标位置）
 
 # 若起点/终点落在障碍物上，自动寻找最近可通行格子
@@ -160,7 +159,7 @@ def heuristic(a, b):
 ```
 图例：
   '.'  →  0  可通行空格
-  '#'  →  1  障碍物（YOLO 检测到的人体/障碍）
+  '#'  →  1  障碍物（YOLO 检测到的障碍）
   'o'  →  2  路径节点
   'S'  →  3  起点
   'G'  →  4  终点
@@ -329,14 +328,14 @@ df -h
 ## 📊 性能参考
 
 **树莓派 4B（4GB RAM）**:
-- FPS: 2-3（完整模式）
+- FPS: 12-13（完整模式）
 - 内存: 60-85%
 - CPU: 70-95%
 
 **优化建议**:
 ```bash
 python3 src/detect_camera_cli.py --model best.pt --skip-frames 2 --no-fps
-# 预期: FPS 8-12, 内存 40-60%, CPU 50-70%
+# 预期: FPS 13-15, 内存 40-60%, CPU 50-70%
 ```
 
 ---
