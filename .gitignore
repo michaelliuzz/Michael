@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+deploy_raspberry_pi/venv/
+
+# Pipeline artifacts
+grid.npy
+path.npy
+runs/
+detection_results/
+detection.log
+
+# Exported models
+*.onnx
+*_ncnn_model/
+
+# OS
+.DS_Store
