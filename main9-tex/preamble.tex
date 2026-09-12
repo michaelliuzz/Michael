@@ -1,0 +1,99 @@
+%%% ---------- 导言区 ---------- %%%
+\usepackage[a4paper,left=2.5cm,right=2.2cm,top=2.5cm,bottom=2.5cm]{geometry}
+
+% 数学
+\usepackage{amsmath,amssymb,amsfonts,bm}
+% 西文与数学字体：Times 系（与原文 TimesNewRomanPSMT 一致）
+% 优先使用 newtx（完整 TeX Live / Overleaf 均自带）：Times 正文 + Times 数学；
+% 若无 newtx，则退回 TeX Gyre Termes（Times 的自由克隆）作正文；
+% 若两者都没有，保持 LaTeX 默认字体，文档仍可正常编译。
+\IfFileExists{newtxtext.sty}{%
+  \usepackage{newtxtext}%
+  \usepackage{newtxmath}%
+}{%
+  \IfFileExists{texgyretermes-regular.otf}{%
+    \setmainfont{texgyretermes}[%
+      Extension    = .otf,
+      UprightFont  = *-regular,
+      BoldFont     = *-bold,
+      ItalicFont   = *-italic,
+      BoldItalicFont = *-bolditalic]%
+  }{}%
+}
+
+% 图表
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{float}
+
+% 列表与杂项
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{pifont}
+
+\graphicspath{{figures/}}
+
+% 图表标题：加粗标签 + 冒号，与原文一致
+\captionsetup{labelsep=colon,labelfont=bf,font=small,skip=6pt}
+
+% 章节格式：一、二、…（居中四号黑体）；小节用 5.1 / 5.1.1 的阿拉伯编号
+\ctexset{
+  section     = {name={,、}, number=\chinese{section},
+                 format=\centering\bfseries\zihao{4}, beforeskip=18pt plus 3pt minus 3pt,
+                 afterskip=12pt plus 2pt minus 2pt, aftername=},
+  subsection  = {number=\arabic{section}.\arabic{subsection},
+                 format=\raggedright\bfseries\zihao{-4}, aftername=\hspace{1em},
+                 beforeskip=12pt plus 2pt minus 2pt, afterskip=8pt plus 1pt minus 1pt},
+  subsubsection={number=\arabic{section}.\arabic{subsection}.\arabic{subsubsection},
+                 format=\raggedright\bfseries\zihao{5}, aftername=\hspace{1em},
+                 beforeskip=10pt plus 2pt minus 2pt, afterskip=6pt plus 1pt minus 1pt},
+}
+
+% 行距
+\linespread{1.3}
+
+% 常用记号
+\newcommand{\disk}{\mathit{disk}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\degr}{\ensuremath{^{\circ}}}
+\DeclareMathOperator{\cross}{cross}
+\DeclareMathOperator{\slack}{slack}
+\DeclareMathOperator{\diam}{diam}
+\DeclareMathOperator*{\maxGap}{max\,Gap}
+\DeclareMathOperator{\vertop}{vert}
+
+% 代码清单样式（Python）
+\definecolor{lstkw}{RGB}{0,0,160}
+\definecolor{lststr}{RGB}{160,0,0}
+\definecolor{lstcmt}{RGB}{0,120,0}
+\definecolor{lstnum}{RGB}{110,110,110}
+\lstdefinestyle{pystyle}{
+  language=Python,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{lstkw}\bfseries,
+  stringstyle=\color{lststr},
+  commentstyle=\color{lstcmt}\itshape,
+  numbers=left,
+  numberstyle=\rmfamily\tiny\color{lstnum},
+  numbersep=8pt,
+  stepnumber=1,
+  breaklines=true,
+  breakatwhitespace=false,
+  breakindent=0pt,
+  postbreak=\mbox{\textcolor{lstnum}{$\hookrightarrow$}\space},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  extendedchars=true,
+  tabsize=4,
+  xleftmargin=2.2em,
+  framexleftmargin=2.2em,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+\lstset{style=pystyle}
