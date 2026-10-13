@@ -1,62 +1,27 @@
-import cv2
-import numpy as np
-from ultralytics import YOLO
+# 兼容入口（原“修改后的yolo”）：拍一帧 -> YOLO11 检测 -> 栅格地图 -> grid.npy
+#
+# 原版本按 20 像素 = 1 格直接整除，地图没有真实尺度；现已改为调用
+# deploy_raspberry_pi/rescue/geo_mapping.py：按相机 FOV + 飞行高度计算 GSD，
+# 结合姿态把检测框投影到地面，再按米制分辨率栅格化并做膨胀处理。
+# 人员（person）不再被当作障碍物，而是作为路径终点。
+#
+# 等价于:
+#   python3 deploy_raspberry_pi/drone_node.py --model deploy_raspberry_pi/best_collapsed.pt \
+#       deploy_raspberry_pi/best_person.pt --source picamera --altitude 10 --once
+# 注意：原脚本的 OBSTACLE_CLASSES = ["person","rock","tree"] 与模型实际类别不符
+#   （best_collapsed.pt 只有 "collapsed"，best_person.pt 只有 "person"），导致地图中没有障碍物。
+# 其余参数（--altitude / --hfov / --res / --source 图片路径 等）可直接追加在本脚本后面。
+import runpy
+import sys
+from pathlib import Path
 
-# ========== 参数 ==========
-MODEL_PATH = "best.pt"   # 或 best_person.pt
-GRID_SIZE = 20           # 一个栅格 = 20x20 像素
-OBSTACLE_CLASSES = ["person", "rock", "tree"]  # 你后面可以改
+ROOT = Path(__file__).resolve().parent / "deploy_raspberry_pi"
+MODEL_PATHS = [str(ROOT / "best_collapsed.pt"), str(ROOT / "best_person.pt")]  # 障碍 + 人员
 
-# ========== 1. 加载模型 ==========
-model = YOLO(MODEL_PATH)
-
-# ========== 2. 打开摄像头 ==========
-from picamera2 import Picamera2
-import time
-
-picam2 = Picamera2()
-config = picam2.create_preview_configuration(
-    main={"format":"RGB888","size":(640,480)}
-)
-picam2.configure(config)
-picam2.start()
-
-time.sleep(1)
-frame = picam2.capture_array()
-picam2.stop()
-
-if frame is None:
-    raise RuntimeError("摄像头读取失败")
-
-h, w, _ = frame.shape
-grid_h = h // GRID_SIZE
-grid_w = w // GRID_SIZE
-
-# ========== 3. 初始化栅格地图 ==========
-# 0 = 可通行，1 = 障碍物
-grid = np.zeros((grid_h, grid_w), dtype=np.uint8)
-
-# ========== 4. YOLO 推理 ==========
-results = model(frame, verbose=False)[0]
-
-for box in results.boxes:
-    cls_id = int(box.cls[0])
-    cls_name = model.names[cls_id]
-
-    if cls_name not in OBSTACLE_CLASSES:
-        continue
-
-    x1, y1, x2, y2 = map(int, box.xyxy[0])
-
-    gx1 = x1 // GRID_SIZE
-    gy1 = y1 // GRID_SIZE
-    gx2 = x2 // GRID_SIZE
-    gy2 = y2 // GRID_SIZE
-
-    grid[gy1:gy2+1, gx1:gx2+1] = 1
-
-# ========== 5. 输出结果 ==========
-print("栅格地图大小:", grid.shape)
-print(grid)
-np.save("grid.npy",grid)
-print("Saved grid to grid.npy")
+argv = sys.argv[1:]
+if "--model" not in argv:
+    argv = ["--model", *MODEL_PATHS] + argv
+if "--once" not in argv:
+    argv.append("--once")
+sys.argv = [str(ROOT / "drone_node.py")] + argv
+runpy.run_path(str(ROOT / "drone_node.py"), run_name="__main__")

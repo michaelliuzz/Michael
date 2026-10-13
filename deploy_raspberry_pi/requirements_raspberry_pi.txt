@@ -17,3 +17,9 @@ opencv-python==4.8.1.78
 # 工具
 numpy>=1.24.0
 pyyaml>=6.0
+
+# 空地协同系统（rescue 包）
+paho-mqtt>=1.6          # 空地 MQTT 通信（另需 sudo apt install mosquitto mosquitto-clients）
+rplidar-roboticia>=0.9  # RPLIDAR 激光雷达驱动（car_node.py --lidar）
+pytest>=7.0             # 单元测试
+# gpiozero 由树莓派系统自带（python3-gpiozero），venv 通过 --system-site-packages 可见
