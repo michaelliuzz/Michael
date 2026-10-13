@@ -29,7 +29,8 @@ import numpy as np
 
 @dataclass
 class CameraModel:
-    """针孔相机模型。默认参数对应 160° 广角 CSI 摄像头的 640x480 输出（需按实际标定修改）"""
+    """针孔相机模型，默认 640x480、水平视场角 62.2°（树莓派 Camera v2）。
+    160° 广角镜头畸变明显，需先标定内参并去畸变，再把标定得到的等效视场角填入 hfov_deg"""
     width: int = 640
     height: int = 480
     hfov_deg: float = 62.2       # 水平视场角（树莓派 Camera v2 为 62.2°，广角头请改为标定值）
@@ -301,7 +302,7 @@ def build_grid_map(detections: list[Detection], cam: CameraModel, pose: DronePos
         fill_polygon(gm_raw, pixels_to_ground(corners, cam, pose))
     r = int(math.ceil(inflate_radius_m / gm.resolution))
     inflated = inflate_manhattan(gm_raw.grid, r)
-    # 人员所在格保持可通行，确保其可作为路径终点
+    # 人员不进入障碍层；若其所在格被膨胀覆盖，select_goal 会用 nearest_free 选最近的可通行格作终点
     out = GridMap(inflated, gm.resolution, gm.x_min, gm.y_max, raw=gm_raw.grid)
     return MapBuildResult(out, persons, ground_sample_distance(cam, pose.altitude_m))
 

@@ -75,3 +75,29 @@ def car_to_world(fix: PersonFix, pose):
     x, y, th = pose
     c, s = math.cos(th), math.sin(th)
     return x + c * fix.x - s * fix.y, y + s * fix.x + c * fix.y
+
+
+class PersonTracker:
+    """
+    多帧确认：时间窗口内至少 min_hits 次定位、且彼此聚集在 gate_m 范围内，才认为确认发现人员，
+    避免单帧误检把小车引走。返回聚集点的平均地面坐标。
+    """
+
+    def __init__(self, min_hits: int = 3, window_s: float = 3.0, gate_m: float = 1.5):
+        self.min_hits, self.window_s, self.gate_m = min_hits, window_s, gate_m
+        self.fixes = []  # [(t, x, y)]
+
+    def add(self, xy, t: float):
+        self.fixes.append((t, float(xy[0]), float(xy[1])))
+
+    def confirmed(self, now: float):
+        self.fixes = [f for f in self.fixes if now - f[0] <= self.window_s]
+        if len(self.fixes) < self.min_hits:
+            return None
+        xs = sorted(f[1] for f in self.fixes)
+        ys = sorted(f[2] for f in self.fixes)
+        mx, my = xs[len(xs) // 2], ys[len(ys) // 2]
+        near = [(x, y) for _, x, y in self.fixes if math.hypot(x - mx, y - my) <= self.gate_m]
+        if len(near) < self.min_hits:
+            return None
+        return (sum(p[0] for p in near) / len(near), sum(p[1] for p in near) / len(near))

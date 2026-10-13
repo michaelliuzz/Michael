@@ -30,11 +30,12 @@ The algorithms live in the `deploy_raspberry_pi/rescue/` package (numpy-only exc
 | `deploy_raspberry_pi/rescue/geo_mapping.py` | Camera model, GSD, pixel↔ground projection with IMU attitude, grid rasterisation, Manhattan inflation, goal selection |
 | `deploy_raspberry_pi/rescue/planner.py` | A* (octile heuristic, no corner cutting), path simplification |
 | `deploy_raspberry_pi/rescue/lidar_gap.py` | 2D-lidar d(θ) profile, gap detection, corridor-checked desired heading |
+| `deploy_raspberry_pi/rescue/local_map.py` | `LidarMapper`: lidar hits mark obstacles, ray carving clears false aerial obstacles; shared by `car_node.py` and `sim.py` |
 | `deploy_raspberry_pi/rescue/control.py` | Pure pursuit, PID heading control, differential drive, recovery, GPIO motor driver |
-| `deploy_raspberry_pi/rescue/person_locate.py` | Person distance/bearing from car camera intrinsics + mount height |
+| `deploy_raspberry_pi/rescue/person_locate.py` | Person distance/bearing from car camera intrinsics + mount height; `PersonTracker` multi-frame confirmation |
 | `deploy_raspberry_pi/rescue/comm.py` | MQTT (paho 1.x/2.x) + loopback link; compressed grid-map messages |
 | `deploy_raspberry_pi/rescue/sim.py` | Full air-ground simulation and Monte Carlo comparison |
-| `deploy_raspberry_pi/drone_node.py` / `car_node.py` | Air-side and ground-side entry points |
+| `deploy_raspberry_pi/drone_node.py` / `car_node.py` | Air-side and ground-side entry points; `car_node` also runs lidar map correction + replanning and optional car-camera person detection (`--person-model`) |
 | `deploy_raspberry_pi/benchmark.py` | ONNX/NCNN export, INT8, FPS comparison, long-run soak test |
 
 ## Setup (Raspberry Pi)
@@ -65,9 +66,9 @@ python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi
 python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi/best_person.pt \
     --save --duration 60 --no-fps
 
-# Low-resource mode (skip-frames must be added to CLI if needed)
+# Low-resource / headless mode: 320 input, detect every other frame, no window
 python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi/best_person.pt \
-    --no-fps --conf 0.3
+    --imgsz 320 --skip-frames 1 --headless --no-fps
 
 # Generate grid map from one captured frame
 python3 修改后的yolo   # produces grid.npy in the working directory

@@ -37,6 +37,7 @@ from .geo_mapping import (CameraModel, Detection, DronePose, GridMap, build_grid
                           empty_map_for_footprint, fill_polygon, ground_to_pixels,
                           inflate_manhattan, nearest_free, select_goal)
 from .lidar_gap import GapConfig, plan_local
+from .local_map import LidarMapper
 from .person_locate import CarCamera, car_to_world, locate_person
 from .planner import astar, path_to_world, simplify_path
 
@@ -246,38 +247,6 @@ class MissionResult:
     final_map: GridMap | None = field(default=None, repr=False)
 
 
-class LidarMapper:
-    """用雷达扫描增量更新栅格地图：命中点标记为障碍，射线经过的近处格子清除（修正航拍误差）"""
-
-    def __init__(self, gm: GridMap, inflate_m: float, carve_range: float = 4.0):
-        self.gm = gm
-        self.raw = (gm.raw if gm.raw is not None else gm.grid).copy()
-        self.r = int(math.ceil(inflate_m / gm.resolution))
-        self.carve_range = carve_range
-
-    def update(self, pose, rel_deg, ranges):
-        x, y, th = pose
-        a = th + np.radians(rel_deg)
-        gm = self.gm
-        # 清除：射线上距离 < min(命中-0.3, carve_range) 的点
-        lim = np.minimum(np.where(np.isfinite(ranges), ranges - 0.3, np.inf), self.carve_range)
-        r = np.arange(0.2, self.carve_range, gm.resolution / 2)
-        mask = r[None, :] < lim[:, None]
-        xs = (x + np.cos(a)[:, None] * r)[mask]
-        ys = (y + np.sin(a)[:, None] * r)[mask]
-        self._set(xs, ys, 0)
-        hit = np.isfinite(ranges)
-        self._set(x + np.cos(a[hit]) * ranges[hit], y + np.sin(a[hit]) * ranges[hit], 1)
-        gm.grid = inflate_manhattan(self.raw, self.r)
-
-    def _set(self, xs, ys, val):
-        gm = self.gm
-        rows = np.floor((gm.y_max - ys) / gm.resolution).astype(int)
-        cols = np.floor((xs - gm.x_min) / gm.resolution).astype(int)
-        ok = (rows >= 0) & (rows < gm.grid.shape[0]) & (cols >= 0) & (cols < gm.grid.shape[1])
-        self.raw[rows[ok], cols[ok]] = val
-
-
 def _plan(gm: GridMap, pose, goal_cell):
     s = nearest_free(gm.grid, gm.world_to_cell(pose[0], pose[1]), 6)
     if s is None or goal_cell is None:
@@ -358,9 +327,7 @@ def run_mission(scene: Scene, policy: str, rng, aerial=None, max_time=None, dt=0
         rel, ranges = lidar_scan(scene.truth, pose, rng)
         if t >= next_replan:
             mapper.update(pose, rel, ranges)
-            path_cells = [gm.world_to_cell(*p) for p in follower.path[follower.idx::5]]
-            blocked = any(gm.in_bounds(r, c) and gm.grid[r, c] for r, c in path_cells[2:])
-            if blocked:
+            if mapper.path_blocked(follower.path[follower.idx::5]):
                 follower, wps = new_follower(goals[goal_idx])
                 replans += 1
             next_replan = t + 0.5

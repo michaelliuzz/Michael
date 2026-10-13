@@ -120,6 +120,8 @@ class CameraDetector:
         # 主循环
         frame_count = 0
         total_detections = 0
+        infer_count = 0       # 实际做推理的帧数（跳帧时少于总帧数）
+        infer_time = 0.0      # 模型推理累计耗时（不含采集、绘图、显示、写视频）
         class_counts = {}
         detections = None
         start_time = time.time()
@@ -150,7 +152,10 @@ class CameraDetector:
                 
                 # 运行检测（跳帧时复用上一帧的检测结果）
                 if detections is None or skip_frames <= 0 or (frame_count - 1) % (skip_frames + 1) == 0:
+                    t_inf = time.time()
                     results = self.model(frame, conf=self.conf, imgsz=self.imgsz, verbose=False)
+                    infer_time += time.time() - t_inf
+                    infer_count += 1
                     detections = results[0]
                     num_detections = len(detections.boxes)
                     total_detections += num_detections
@@ -223,12 +228,14 @@ class CameraDetector:
             total_time = time.time() - start_time
             print("\n" + "="*50)
             print("[统计]")
-            print(f"  总帧数: {frame_count}")
+            print(f"  总帧数: {frame_count}（其中推理 {infer_count} 帧）")
             print(f"  总检测目标数: {total_detections}")
-            print(f"  平均目标数/帧: {total_detections/frame_count if frame_count > 0 else 0:.2f}")
+            print(f"  平均目标数/推理帧: {total_detections/infer_count if infer_count > 0 else 0:.2f}")
             if class_counts:
                 print("  各类别累计: " + ", ".join(f"{k}={v}" for k, v in sorted(class_counts.items())))
-            print(f"  平均 FPS: {frame_count/total_time if total_time > 0 else 0:.1f}")
+            print(f"  端到端 FPS（总帧数/总耗时，含采集、绘图、显示、存视频）: "
+                  f"{frame_count/total_time if total_time > 0 else 0:.1f}")
+            print(f"  纯推理 FPS（推理帧数/推理耗时）: {infer_count/infer_time if infer_time > 0 else 0:.1f}")
             print(f"  总耗时: {total_time:.1f}s")
             if output_path:
                 print(f"  结果视频: {output_path}")

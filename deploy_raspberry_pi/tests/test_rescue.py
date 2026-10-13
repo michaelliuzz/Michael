@@ -289,3 +289,83 @@ def test_simulation_smoke():
     coop = next(r for r in results if r.policy == "coop")
     assert coop.collisions == 0
     assert q["obstacle_recall"] > 0.5
+
+
+# ---------------- local_map（雷达修正地图）----------------
+
+def test_lidar_mapper_marks_hits_carves_free_and_ignores_invalid():
+    from rescue.geo_mapping import GridMap
+    from rescue.local_map import LidarMapper
+    gm = GridMap(np.zeros((40, 40), np.uint8), 0.25, -5.0, 5.0, raw=np.zeros((40, 40), np.uint8))
+    gm.raw[20, 30] = 1                           # 航拍误检：小车正前方 2.5 m 处的“假障碍”
+    mapper = LidarMapper(gm, inflate_m=0.0)
+    # 小车在原点朝 +x；正前方 4 m 有真实障碍；另有一条 0 读数（无效）与一条 inf（开阔）
+    mapper.update((0.0, 0.0, 0.0), [0.0, 90.0, 180.0], [4.0, 0.0, float("inf")])
+    assert gm.raw[gm.world_to_cell(4.0, 0.0)] == 1      # 命中点标记为障碍
+    assert gm.raw[gm.world_to_cell(2.6, 0.0)] == 0      # 射线经过处的假障碍被清除
+    assert gm.raw[gm.world_to_cell(0.0, 0.1)] == 0      # 0 读数没有在车身处标障碍
+    assert mapper.path_blocked([(0, 0), (0.5, 0), (1, 0), (4.0, 0.0)])
+    assert not mapper.path_blocked([(0, 0), (0, -0.5), (0, -1), (0, -2)])
+
+
+def test_recovery_ignores_invalid_zero_readings():
+    from rescue.control import recovery
+    ctrl = HeadingController(DriveConfig())
+    cfg = GapConfig()
+    ang = np.arange(-180, 180, 1.0)
+    rng = np.full_like(ang, 3.0)
+    rng[np.abs(ang) < 10] = 0.0                 # 前方全是无效读数
+    v, _ = recovery(ang, rng, 0.5, ctrl, 0.1, cfg)
+    assert v == 0.0                             # 不应误判为“贴近障碍”而后退
+    rng[np.abs(ang) < 10] = 0.15                # 真的贴近障碍
+    v, _ = recovery(ang, rng, 0.5, ctrl, 0.1, cfg)
+    assert v < 0
+
+
+# ---------------- PersonTracker（车载多帧确认）----------------
+
+def test_person_tracker_confirms_cluster_and_rejects_outlier():
+    from rescue.person_locate import PersonTracker
+    tr = PersonTracker(min_hits=3, window_s=3.0, gate_m=1.0)
+    tr.add((5.0, 5.0), 0.0)
+    tr.add((20.0, -3.0), 0.1)                   # 单帧误检
+    assert tr.confirmed(0.2) is None
+    tr.add((5.2, 4.9), 0.5)
+    tr.add((4.9, 5.1), 1.0)
+    xy = tr.confirmed(1.1)
+    assert xy == pytest.approx((5.03, 5.0), abs=0.05)
+    assert tr.confirmed(10.0) is None           # 超出时间窗口后失效
+
+
+# ---------------- car_node 集成（无硬件 dry-run）----------------
+
+def test_car_node_dry_run_plans_and_reaches_goal(monkeypatch, capsys):
+    import car_node
+    from rescue.comm import LoopbackLink, encode_map
+    from rescue.geo_mapping import GridMap
+    g = np.zeros((60, 60), np.uint8)
+    g[30, 5:55] = 1                             # 一堵墙，必须绕行
+    gm = GridMap(g, 0.25, -7.5, 7.5)
+    payload = encode_map(gm, [(0.0, 5.0, 0.9)])
+
+    class FakeLink(LoopbackLink):
+        def __init__(self, *a, **k):
+            super().__init__()
+
+        def subscribe(self, topic, cb):
+            super().subscribe(topic, cb)
+            cb(topic, payload)
+
+    def fake_print(*a, **k):
+        print_orig(*a, **k)
+        if a and "到达终点" in str(a[0]):
+            raise KeyboardInterrupt
+
+    print_orig = print
+    monkeypatch.setattr(car_node, "MqttLink", FakeLink)
+    monkeypatch.setattr(car_node.time, "sleep", lambda s: None)
+    monkeypatch.setattr(car_node, "print", fake_print, raising=False)
+    monkeypatch.setattr(sys, "argv", ["car_node.py", "--mqtt", "x", "--dry-run"])
+    car_node.main()
+    out = capsys.readouterr().out
+    assert "[规划·新地图]" in out and "到达终点" in out

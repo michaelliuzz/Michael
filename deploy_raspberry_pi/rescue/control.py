@@ -112,8 +112,10 @@ class PurePursuit:
 
 def recovery(rel_deg, ranges, target, ctrl, dt, cfg):
     """前方无可通行缝隙时的脱困策略：前方贴近障碍则缓慢后退，否则原地转向目标"""
-    rel = np.asarray(rel_deg)
-    rr = np.asarray(ranges)
+    rel = np.asarray(rel_deg, float)
+    rr = np.asarray(ranges, float)
+    ok = ~np.isnan(rr) & (rr > 0.02)   # 丢弃无效测量（RPLIDAR 用 0 表示测量失败）
+    rel, rr = rel[ok], rr[ok]
     front = np.abs(rel) <= 90
     near = cfg.car_width / 2 + cfg.margin + 0.1
     back_clear = not np.any((np.abs(rel) >= 135) & (rr < 0.35))
