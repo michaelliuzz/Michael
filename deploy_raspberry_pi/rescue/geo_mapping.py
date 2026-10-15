@@ -30,10 +30,10 @@ import numpy as np
 @dataclass
 class CameraModel:
     """针孔相机模型，默认 640x480、水平视场角 62.2°（树莓派 Camera v2）。
-    160° 广角镜头畸变明显，需先标定内参并去畸变，再把标定得到的等效视场角填入 hfov_deg"""
+    镜头畸变明显时需先标定内参并去畸变，再把标定得到的等效视场角填入 hfov_deg"""
     width: int = 640
     height: int = 480
-    hfov_deg: float = 62.2       # 水平视场角（树莓派 Camera v2 为 62.2°，广角头请改为标定值）
+    hfov_deg: float = 62.2       # 水平视场角（默认值为树莓派 Camera v2 的 62.2°，请按所用镜头的标称值或标定值修改）
     vfov_deg: float | None = None  # 为 None 时按方形像素由 hfov 推出
 
     @property
@@ -62,7 +62,7 @@ def ground_sample_distance(cam: CameraModel, altitude_m: float) -> float:
 
 @dataclass
 class DronePose:
-    """无人机位姿。角度单位为度，来源于九轴 IMU（姿态）与 BMP 气压计（高度）"""
+    """无人机位姿。角度单位为度，来源于九轴 IMU（姿态）与 BMP388 气压计（高度）"""
     altitude_m: float = 10.0
     pitch_deg: float = 0.0   # >0：相机向机头方向（+y）倾斜
     roll_deg: float = 0.0    # >0：相机向右侧（+x）倾斜
