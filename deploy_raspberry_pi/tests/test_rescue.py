@@ -466,3 +466,11 @@ def test_viz_static_figures_render(tmp_path):
     for fn in (viz.fig_gap, viz.fig_person, viz.fig_comm, viz.fig_baro):
         fn(1, tmp_path)
     assert len(list(tmp_path.glob("viz_*.png"))) == 4
+
+
+def test_viz_report_mode_renders_compact_figure(tmp_path, monkeypatch):
+    pytest.importorskip("matplotlib")
+    from rescue import viz
+    monkeypatch.setattr(viz, "REPORT", True)
+    viz.fig_comm(1, tmp_path)
+    assert (tmp_path / "viz_comm.png").stat().st_size > 0

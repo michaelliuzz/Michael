@@ -37,8 +37,9 @@ python3 pose_publisher.py --bmp388 --print                        # 气压计相
 
 ```bash
 cd deploy_raspberry_pi
-python3 -m rescue.viz all --out viz                                # 7 张功能示意图 + 2 段搜救动画
-python3 -m rescue.viz gap --out viz                                # 只画某一项：mapping/astar/gap/person/control/comm/baro
+python3 -m rescue.viz all --out viz                                # 9 张功能示意图 + 2 段搜救动画
+python3 -m rescue.viz all --report --out viz_report                # 插入 Word 的紧凑版本（14～15 cm 宽时文字约 7 磅）
+python3 -m rescue.viz gap --out viz                                # 只画某一项：mapping/astar/gap/person/control/comm/baro/demo/frames
 python3 -m rescue.viz animate --policy coop --out viz/coop.mp4     # 空地协同搜救过程（--policy ground_search 为仅地面搜索）
 python3 -m rescue.viz animate --policy coop --out viz/coop.gif     # 导出 gif，便于插入 PPT
 ```

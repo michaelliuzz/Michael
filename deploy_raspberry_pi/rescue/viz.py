@@ -10,6 +10,8 @@
     python3 -m rescue.viz control --out viz             # 路径跟踪与速度/角速度/左右履带指令
     python3 -m rescue.viz comm --out viz                # 栅格地图压缩编码前后对比
     python3 -m rescue.viz baro --out viz                # 气压测高仿真（按 BMP388 手册精度加噪声）
+    python3 -m rescue.viz frames --out viz              # 两种策略的搜救过程截图
+    python3 -m rescue.viz all --report --out viz_report # 报告排版版本（插入 Word 时文字约 7 磅）
     python3 -m rescue.viz animate --policy coop --out viz/sim_coop.mp4   # 搜救过程动画
     python3 -m rescue.viz animate --policy ground_search --out viz/sim_search.gif
 
@@ -32,10 +34,34 @@ from .geo_mapping import (DronePose, GridMap, altitude_from_pressure, fill_polyg
 from .lidar_gap import GapConfig, plan_local
 from .person_locate import CarCamera, PersonTracker, car_to_world, locate_person
 from .planner import astar, path_length_cells, path_to_world, simplify_path
-from .sim import lidar_scan, prepare_trial, project_person_to_car_camera, run_mission
+from .sim import POLICIES, lidar_scan, plot_mission, prepare_trial, project_person_to_car_camera, run_mission
 
 COLORS = {"debris": "#8c6d46", "stone": "#7f7f7f", "wood": "#4f7f3a", "person": "#d62728"}
 NAVY, BLUE, ORANGE, GREEN, RED = "#1B3A6B", "#2F6DB5", "#E07B24", "#2E8B57", "#C0392B"
+REPORT = False   # 报告模式：画布缩小、不画总标题、子图用短标题，按 14～15 cm 宽插入 Word 时文字约 7 磅
+
+
+def T(full, short):
+    return short if REPORT else full
+
+
+def F(size):
+    return size * 0.72 if REPORT else size
+
+
+def M(size):
+    return size * 0.5 if REPORT else size
+
+
+def S(w, h, report_size=None):
+    if not REPORT:
+        return (w, h)
+    return report_size or (w * 0.46, h * 0.46)
+
+
+def _suptitle(fig, *args, **kw):
+    if not REPORT:
+        fig.suptitle(*args, **kw)
 
 
 def _plt():
@@ -45,6 +71,10 @@ def _plt():
     plt.rcParams["font.sans-serif"] = ["Noto Sans SC", "Noto Sans CJK SC", "WenQuanYi Zen Hei", "SimHei",
                                        "Microsoft YaHei", "DejaVu Sans"]
     plt.rcParams["axes.unicode_minus"] = False
+    if REPORT:
+        plt.rcParams.update({"font.size": 7.5, "axes.titlesize": 7.8, "axes.labelsize": 7.2,
+                             "xtick.labelsize": 6.5, "ytick.labelsize": 6.5, "legend.fontsize": 6.3,
+                             "axes.linewidth": 0.6, "legend.borderpad": 0.3, "legend.handlelength": 1.6})
     return plt
 
 
@@ -56,7 +86,7 @@ def _extent(gm):
 def _save(fig, out, name):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out / name, dpi=150, bbox_inches="tight")
+    fig.savefig(out / name, dpi=300 if REPORT else 150, bbox_inches="tight")
     print(f"[✓] {out / name}")
 
 
@@ -74,9 +104,9 @@ def _record(scene, aerial, policy, seed):
 def fig_mapping(seed, out):
     plt = _plt()
     from matplotlib.patches import Polygon, Rectangle
-    scene, dets, aerial, map_ms = prepare_trial(seed)
+    scene, dets, aerial, _ = prepare_trial(seed)
     gm = aerial.gridmap
-    fig, axes = plt.subplots(2, 2, figsize=(13, 10.5))
+    fig, axes = plt.subplots(2, 2, figsize=S(13, 10.5))
 
     ax = axes[0, 0]
     for o in scene.obstacles:
@@ -88,7 +118,7 @@ def fig_mapping(seed, out):
     ax.set_xlim(0, scene.cam.width)
     ax.set_ylim(scene.cam.height, 0)
     ax.set_aspect("equal")
-    ax.set_title(f"(a) 无人机图像与 YOLO 检测框（{len(dets)} 个，半透明为空中不可见）")
+    ax.set_title(T(f"(a) 无人机图像与 YOLO 检测框（{len(dets)} 个，半透明为空中不可见）", "(a) 无人机图像与检测框"))
 
     ax = axes[0, 1]
     for o in scene.obstacles:
@@ -100,29 +130,29 @@ def fig_mapping(seed, out):
         for pose, c, ls, lab in ((scene.measured_pose, BLUE, "-", "有姿态补偿"), (level, RED, "--", "无姿态补偿")):
             g = pixels_to_ground(corners, scene.cam, pose)
             ax.add_patch(Polygon(g, fill=False, ec=c, ls=ls, lw=1.0, label=lab if k == 0 else None))
-    ax.plot(*scene.person_xy, "*", c=COLORS["person"], ms=14, label="受困人员（真实）")
+    ax.plot(*scene.person_xy, "*", c=COLORS["person"], ms=M(14), label="受困人员（真实）")
     ax.set_xlim(*_extent(gm)[:2])
     ax.set_ylim(*_extent(gm)[2:])
     ax.set_aspect("equal")
-    ax.legend(loc="lower right", fontsize=9)
-    ax.set_title(f"(b) 检测框地面投影（灰色为真实障碍；俯仰 {scene.true_pose.pitch_deg:.1f}°，"
-                 f"横滚 {scene.true_pose.roll_deg:.1f}°）")
+    ax.legend(loc="lower right", fontsize=F(9))
+    ax.set_title(T(f"(b) 检测框地面投影（灰色为真实障碍；俯仰 {scene.true_pose.pitch_deg:.1f}°，"
+                   f"横滚 {scene.true_pose.roll_deg:.1f}°）", "(b) 检测框地面投影（灰色为真实障碍）"))
 
     ax = axes[1, 0]
     ax.imshow(gm.raw, cmap="Greys", extent=_extent(gm), vmin=0, vmax=1)
-    ax.set_title(f"(c) 栅格化结果（{gm.resolution} m/格，{gm.shape[0]}×{gm.shape[1]}）")
+    ax.set_title(T(f"(c) 栅格化结果（{gm.resolution} m/格，{gm.shape[0]}×{gm.shape[1]}）", f"(c) 栅格化结果（{gm.resolution} m/格）"))
 
     ax = axes[1, 1]
     ax.imshow(gm.grid.astype(float) * 0.45 + gm.raw.astype(float) * 0.55, cmap="Greys", extent=_extent(gm), vmin=0, vmax=1)
     goal_cell, _ = select_goal(gm, aerial.persons_xy)
-    ax.plot(*gm.cell_to_world(*goal_cell), "*", c=COLORS["person"], ms=15, label="终点（航拍人员坐标）")
-    ax.plot(*scene.start_pose[:2], "s", c=GREEN, ms=9, label="小车起点")
-    ax.legend(loc="lower right", fontsize=9)
-    ax.set_title(f"(d) 曼哈顿膨胀 0.3 m（浅灰）与终点选取，建图耗时 {map_ms:.1f} ms")
+    ax.plot(*gm.cell_to_world(*goal_cell), "*", c=COLORS["person"], ms=M(15), label="终点（航拍人员坐标）")
+    ax.plot(*scene.start_pose[:2], "s", c=GREEN, ms=M(9), label="小车起点")
+    ax.legend(loc="lower right", fontsize=F(9))
+    ax.set_title(T("(d) 曼哈顿膨胀 0.3 m（浅灰）与终点选取", "(d) 障碍膨胀（浅灰）与终点选取"))
     for a in axes[0, 1], axes[1, 0], axes[1, 1]:
         a.set_xlabel("x / m")
         a.set_ylabel("y / m")
-    fig.suptitle("识别结果栅格化：像素检测框 → 地面坐标 → 栅格地图", fontsize=14)
+    _suptitle(fig, "识别结果栅格化：像素检测框 → 地面坐标 → 栅格地图", fontsize=F(14))
     fig.tight_layout()
     _save(fig, out, "viz_mapping.png")
     plt.close(fig)
@@ -142,27 +172,27 @@ def fig_astar(seed, out):
     p4 = astar(gm.grid, s, g, allow_diag=False)
     wps = path_to_world(gm, simplify_path(gm.grid, p8))
     show = gm.grid.astype(float) * 0.45 + gm.raw.astype(float) * 0.55
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6.4))
+    fig, axes = plt.subplots(1, 2, figsize=S(14, 6.4))
     for ax in axes:
         ax.imshow(show, cmap="Greys", extent=_extent(gm), vmin=0, vmax=1)
-        ax.plot(*gm.cell_to_world(*s), "s", c=GREEN, ms=10, label="起点")
-        ax.plot(*gm.cell_to_world(*g), "*", c=COLORS["person"], ms=16, label="终点")
+        ax.plot(*gm.cell_to_world(*s), "s", c=GREEN, ms=M(10), label="起点")
+        ax.plot(*gm.cell_to_world(*g), "*", c=COLORS["person"], ms=M(16), label="终点")
         ax.set_xlabel("x / m")
         ax.set_ylabel("y / m")
     w8 = np.array(path_to_world(gm, p8))
     ax = axes[0]
     ax.plot(w8[:, 0], w8[:, 1], c=ORANGE, lw=1.5, label=f"A* 原始路径（{len(p8)} 格）")
     w = np.array(wps)
-    ax.plot(w[:, 0], w[:, 1], "-o", c=BLUE, lw=2.2, ms=6, label=f"视线法精简后航点（{len(wps)} 个）")
-    ax.legend(loc="lower right", fontsize=9)
-    ax.set_title("(a) 8 邻域 A* 路径与航点精简")
+    ax.plot(w[:, 0], w[:, 1], "-o", c=BLUE, lw=2.2, ms=M(6), label=f"视线法精简后航点（{len(wps)} 个）")
+    ax.legend(loc="lower right", fontsize=F(9))
+    ax.set_title(T("(a) 8 邻域 A* 路径与航点精简", "(a) A* 路径与航点精简"))
     ax = axes[1]
     w4 = np.array(path_to_world(gm, p4))
     ax.plot(w4[:, 0], w4[:, 1], c=RED, lw=1.6, label=f"4 邻域：{path_length_cells(p4) * gm.resolution:.1f} m")
     ax.plot(w8[:, 0], w8[:, 1], c=BLUE, lw=1.6, label=f"8 邻域：{path_length_cells(p8) * gm.resolution:.1f} m")
-    ax.legend(loc="lower right", fontsize=9)
-    ax.set_title("(b) 4 邻域与 8 邻域路径长度对比")
-    fig.suptitle("全局路径规划（深灰为障碍，浅灰为膨胀区域）", fontsize=14)
+    ax.legend(loc="lower right", fontsize=F(9))
+    ax.set_title(T("(b) 4 邻域与 8 邻域路径长度对比", "(b) 4 邻域与 8 邻域对比"))
+    _suptitle(fig, "全局路径规划（深灰为障碍，浅灰为膨胀区域）", fontsize=F(14))
     fig.tight_layout()
     _save(fig, out, "viz_astar.png")
     plt.close(fig)
@@ -197,7 +227,7 @@ def fig_gap(seed, out):
     fin = np.isfinite(rng_)
     to_plot = lambda b_deg, r: (-r * np.sin(np.radians(b_deg)), r * np.cos(np.radians(b_deg)))  # 车头朝上
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6.4), gridspec_kw={"width_ratios": [1, 1.25]})
+    fig, axes = plt.subplots(1, 2, figsize=S(14, 6.4), gridspec_kw={"width_ratios": [1, 1.25]})
     ax = axes[0]
     for gp in lp.gaps:
         ax.add_patch(Wedge((0, 0), min(gp.mean_dist, 3.2), 90 + gp.start_deg, 90 + gp.end_deg,
@@ -207,8 +237,8 @@ def fig_gap(seed, out):
         ax.plot(*zip((0, 0), to_plot(b, 3.2)), c="#999999", lw=0.8, ls=":")
     xs, ys = -rng_[fin] * np.sin(rel[fin]), rng_[fin] * np.cos(rel[fin])
     near = rng_[fin] < cfg.safe_dist
-    ax.scatter(xs[~near], ys[~near], s=6, c="#555555", label="激光雷达扫描点")
-    ax.scatter(xs[near], ys[near], s=10, c=RED, label="1 m 内障碍边界点")
+    ax.scatter(xs[~near], ys[~near], s=M(6), c="#555555", label="激光雷达扫描点")
+    ax.scatter(xs[near], ys[near], s=M(10), c=RED, label="1 m 内障碍边界点")
     tgt = math.degrees(st["target"])
     ax.annotate("", to_plot(tgt, 2.6), (0, 0), arrowprops=dict(arrowstyle="->", color="#888888", lw=1.6, ls="--"))
     ax.annotate("", to_plot(lp.heading_deg, 2.6), (0, 0), arrowprops=dict(arrowstyle="->", color=BLUE, lw=2.4))
@@ -223,10 +253,13 @@ def fig_gap(seed, out):
     ax.set_xlim(-3.3, 3.3)
     ax.set_ylim(-1.0, 3.5)
     ax.set_aspect("equal")
-    ax.legend(loc="lower left", fontsize=8.5)
+    if REPORT:
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=F(8.5))
+    else:
+        ax.legend(loc="lower left", fontsize=F(8.5))
     ax.set_xlabel("左右 / m")
     ax.set_ylabel("前方 / m")
-    ax.set_title("(a) 小车视角俯视图（绿色为可通行缝隙，红色为过窄缝隙）")
+    ax.set_title(T("(a) 小车视角俯视图（绿色为可通行缝隙，红色为过窄缝隙）", "(a) 小车视角俯视图"))
 
     ax = axes[1]
     centers, prof = lp.profile
@@ -235,16 +268,16 @@ def fig_gap(seed, out):
     for gp in lp.gaps:
         ax.axvspan(gp.start_deg, gp.end_deg, color=GREEN if gp.passable else RED, alpha=0.15)
         ax.text(gp.center_deg, 3.75, f"{gp.width_m:.2f} m\n{'可通行' if gp.passable else '过窄'}",
-                ha="center", va="top", fontsize=8.5, color=GREEN if gp.passable else RED)
+                ha="center", va="top", fontsize=F(8.5), color=GREEN if gp.passable else RED)
     ax.axvline(tgt, c="#888888", ls="--", lw=1.2, label="全局目标方位")
     ax.axvline(lp.heading_deg, c=BLUE, lw=2, label="期望航向")
     ax.set_xlim(cfg.fov_deg / 2, -cfg.fov_deg / 2)
     ax.set_ylim(0, 4.0)
     ax.set_xlabel("扫描角 β / °（左为正）")
     ax.set_ylabel("最近距离 / m（大于 4 m 截断显示）")
-    ax.legend(loc="lower right", fontsize=8.5)
-    ax.set_title(f"(b) 前方 120° 距离曲线与缝隙（所需宽度 {cfg.required_width:.2f} m）")
-    fig.suptitle("基于二维激光雷达缝隙检测的局部避障（典型场景：全局目标方向正前方 0.7 m 处被障碍阻挡）", fontsize=13)
+    ax.legend(loc="lower right", fontsize=F(8.5))
+    ax.set_title(T(f"(b) 前方 120° 距离曲线与缝隙（所需宽度 {cfg.required_width:.2f} m）", f"(b) 距离曲线 d(β) 与缝隙（所需宽度 {cfg.required_width:.2f} m）"))
+    _suptitle(fig, "基于二维激光雷达缝隙检测的局部避障（典型场景：全局目标方向正前方 0.7 m 处被障碍阻挡）", fontsize=F(13))
     fig.tight_layout()
     _save(fig, out, "viz_gap.png")
     plt.close(fig)
@@ -262,7 +295,7 @@ def fig_person(seed, out):
     cases = [("站立", SimpleNamespace(person_xy=(5.0, 0.9), person_lying=False), NAVY),
              ("倒地", SimpleNamespace(person_xy=(3.6, -1.1), person_lying=True), ORANGE)]
     pose = (0.0, 0.0, 0.0)
-    fig = plt.figure(figsize=(15, 5.6))
+    fig = plt.figure(figsize=S(15, 5.6, (6.9, 2.75)))
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.05])
     horizon = cam.height / 2 - cam.f * math.tan(math.radians(cam.pitch_down_deg))
     top = fig.add_subplot(gs[0, 2])
@@ -276,15 +309,16 @@ def fig_person(seed, out):
         ax.add_patch(Rectangle((0, horizon), cam.width, cam.height - horizon, fc="#D8CDBE"))
         x1, y1, x2, y2 = bb
         ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, fill=False, ec=RED, lw=2))
-        ax.plot((x1 + x2) / 2, y2, "o", c=RED, ms=7)
-        ax.annotate("接地点", ((x1 + x2) / 2, y2), (12, 14), textcoords="offset points", color=RED, fontsize=10)
+        ax.plot((x1 + x2) / 2, y2, "o", c=RED, ms=M(7))
+        ax.annotate("接地点", ((x1 + x2) / 2, y2), (12, 14), textcoords="offset points", color=RED, fontsize=F(10))
         fix = locate_person(bb, cam)
         ax.set_xlim(0, cam.width)
         ax.set_ylim(cam.height, 0)
         ax.set_aspect("equal")
         note = "（倒地时接地点为身体近端）" if sc.person_lying else ""
-        ax.set_title(f"({'ab'[k]}) 车载相机画面：{name}人员{note}\n测得前方 {fix.x:.2f} m、左侧 {fix.y:+.2f} m"
-                     f"（人体中心 {sc.person_xy[0]:.2f} m、{sc.person_xy[1]:+.2f} m）", fontsize=10.5)
+        ax.set_title(T(f"({'ab'[k]}) 车载相机画面：{name}人员{note}\n测得前方 {fix.x:.2f} m、左侧 {fix.y:+.2f} m"
+                       f"（人体中心 {sc.person_xy[0]:.2f} m、{sc.person_xy[1]:+.2f} m）",
+                       f"({'ab'[k]}) {name}人员：测得前方 {fix.x:.2f} m\n（人体中心 {sc.person_xy[0]:.2f} m）"), fontsize=F(10.5))
         tracker, pts = PersonTracker(), []
         for i in range(8):
             noisy = np.asarray(bb) + rng.normal(0, 2.0, 4)
@@ -294,20 +328,21 @@ def fig_person(seed, out):
             tracker.add(xy, i * 0.3)
         conf = tracker.confirmed(8 * 0.3)
         P = np.array(pts)
-        top.scatter(-P[:, 1], P[:, 0], s=14, c=col, alpha=0.6, label=f"{name}：单帧定位（8 帧）")
-        top.plot(-sc.person_xy[1], sc.person_xy[0], "*", c=col, ms=16, mec="k", label=f"{name}：人体中心")
+        top.scatter(-P[:, 1], P[:, 0], s=M(14), c=col, alpha=0.6, label=f"{name}：单帧定位（8 帧）")
+        top.plot(-sc.person_xy[1], sc.person_xy[0], "*", c=col, ms=M(16), mec="k", label=f"{name}：人体中心")
         if conf:
             err = math.hypot(conf[0] - sc.person_xy[0], conf[1] - sc.person_xy[1])
-            top.plot(-conf[1], conf[0], "x", c=RED, ms=11, mew=2.5)
-            top.annotate(f"多帧确认\n误差 {err:.2f} m", (-conf[1], conf[0]), (10, -28), textcoords="offset points", fontsize=9)
+            top.plot(-conf[1], conf[0], "x", c=RED, ms=M(11), mew=2.5)
+            top.annotate(f"多帧确认\n误差 {err:.2f} m", (-conf[1], conf[0]), (-10, 0) if k == 0 else (10, -6),
+                         textcoords="offset points", ha="right" if k == 0 else "left", va="center", fontsize=F(9))
     top.set_xlim(-4, 4)
     top.set_ylim(-0.6, 7.5)
     top.set_aspect("equal")
     top.set_xlabel("左右 / m（左为负）")
     top.set_ylabel("前方 / m")
-    top.legend(loc="upper left", fontsize=8)
-    top.set_title("(c) 小车坐标系下的定位结果（浅蓝为相机视场）", fontsize=10.5)
-    fig.suptitle(f"人体识别与定位：检测框底边接地点 + 相机安装高度 {cam.mount_height_m} m、俯角 {cam.pitch_down_deg}°", fontsize=14)
+    top.legend(loc="lower left", fontsize=F(8))
+    top.set_title(T("(c) 小车坐标系下的定位结果（浅蓝为相机视场）", "(c) 小车坐标系下的定位结果"), fontsize=F(10.5))
+    _suptitle(fig, f"人体识别与定位：检测框底边接地点 + 相机安装高度 {cam.mount_height_m} m、俯角 {cam.pitch_down_deg}°", fontsize=F(14))
     fig.tight_layout()
     _save(fig, out, "viz_person.png")
     plt.close(fig)
@@ -327,20 +362,20 @@ def fig_control(seed, out):
     w = np.array([f["w"] for f in frames])
     err = np.array([math.degrees(f["target"]) for f in frames])
     wheels = np.array([ctrl.to_wheels(a, b) for a, b in zip(v, w)])
-    fig = plt.figure(figsize=(15, 6.2))
+    fig = plt.figure(figsize=S(15, 6.2, (6.9, 3.6)))
     gs = fig.add_gridspec(2, 2, width_ratios=[1, 1.3])
     ax = fig.add_subplot(gs[:, 0])
     tr = scene.truth
     ax.imshow(tr.grid, cmap="Greys", extent=_extent(tr), vmin=0, vmax=1.6)
     p = np.array(res.initial_path)
-    ax.plot(p[:, 0], p[:, 1], "--o", c=ORANGE, ms=4, lw=1.5, label="A* 初始航点")
+    ax.plot(p[:, 0], p[:, 1], "--o", c=ORANGE, ms=M(4), lw=1.5, label="A* 初始航点")
     traj = np.array(res.trajectory)
     ax.plot(traj[:, 0], traj[:, 1], c=BLUE, lw=2, label=f"实际轨迹（{res.distance_m:.1f} m，{res.time_s:.0f} s）")
-    ax.plot(*scene.person_xy, "*", c=COLORS["person"], ms=15, label="受困人员")
-    ax.legend(loc="lower right", fontsize=9)
+    ax.plot(*scene.person_xy, "*", c=COLORS["person"], ms=M(15), label="受困人员")
+    ax.legend(loc="lower right", fontsize=F(9))
     ax.set_xlabel("x / m")
     ax.set_ylabel("y / m")
-    ax.set_title("(a) 纯追踪 + 缝隙避障的行驶轨迹")
+    ax.set_title(T("(a) 纯追踪 + 缝隙避障的行驶轨迹", "(a) 行驶轨迹"))
     ax = fig.add_subplot(gs[0, 1])
     ax.plot(t, err, c="#888888", lw=1, label="前视点方位（航向误差）/ °")
     ax.set_ylabel("航向误差 / °")
@@ -350,16 +385,16 @@ def fig_control(seed, out):
     ax2.set_ylabel("v / ω")
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax.legend(h1 + h2, l1 + l2, loc="lower right", fontsize=8.5)
+    ax.legend(h1 + h2, l1 + l2, loc="lower right", fontsize=F(8.5))
     ax.set_title("(b) PID 航向控制输出")
     ax = fig.add_subplot(gs[1, 1])
     ax.plot(t, wheels[:, 0], c=NAVY, lw=1.4, label="左履带")
     ax.plot(t, wheels[:, 1], c=GREEN, lw=1.4, label="右履带")
     ax.set_xlabel("时间 / s")
     ax.set_ylabel("PWM 占空比（归一化）")
-    ax.legend(loc="upper right", fontsize=8.5)
-    ax.set_title("(c) 差速分配后的左右履带指令")
-    fig.suptitle("运动控制：纯追踪 → PID 航向控制 → 差速分配", fontsize=14)
+    ax.legend(loc="upper right", fontsize=F(8.5))
+    ax.set_title(T("(c) 差速分配后的左右履带指令", "(c) 左右履带指令"))
+    _suptitle(fig, "运动控制：纯追踪 → PID 航向控制 → 差速分配", fontsize=F(14))
     fig.tight_layout()
     _save(fig, out, "viz_control.png")
     plt.close(fig)
@@ -377,17 +412,17 @@ def fig_comm(seed, out):
     gm2, persons, _ = decode_map(payload)
     same = bool(np.array_equal(gm.grid, gm2.grid))
     raw = gm.grid.size
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5.4))
-    for ax, g, title in ((axes[0], gm.grid, "(a) 空中端发送的栅格地图"), (axes[1], gm2.grid, "(b) 地面端解码得到的栅格地图")):
+    fig, axes = plt.subplots(1, 2, figsize=S(12, 5.4))
+    for ax, g, title in ((axes[0], gm.grid, T("(a) 空中端发送的栅格地图", f"(a) 发送：逐格存储 {raw / 1024:.1f} KB")), (axes[1], gm2.grid, T("(b) 地面端解码得到的栅格地图", f"(b) 解码：消息 {len(payload) / 1024:.2f} KB"))):
         ax.imshow(g, cmap="Greys", extent=_extent(gm), vmin=0, vmax=1)
         for px, py, *_ in (aerial.persons_xy if g is gm.grid else persons):
-            ax.plot(px, py, "*", c=COLORS["person"], ms=13)
+            ax.plot(px, py, "*", c=COLORS["person"], ms=M(13))
         ax.set_title(title)
         ax.set_xlabel("x / m")
         ax.set_ylabel("y / m")
-    fig.suptitle(f"MQTT 地图消息：{gm.shape[0]}×{gm.shape[1]} 栅格，逐格存储 {raw / 1024:.1f} KB → "
+    _suptitle(fig, f"MQTT 地图消息：{gm.shape[0]}×{gm.shape[1]} 栅格，逐格存储 {raw / 1024:.1f} KB → "
                  f"按位压缩 + zlib + Base64 后 {len(payload) / 1024:.2f} KB；解码结果{'完全一致' if same else '不一致'}",
-                 fontsize=12.5)
+                 fontsize=F(12.5))
     fig.tight_layout()
     _save(fig, out, "viz_comm.png")
     plt.close(fig)
@@ -409,23 +444,23 @@ def fig_baro(seed, out, noise_pa=3.6):
     alt = np.array([altitude_from_pressure(x, ground, temp) for x in meas])
     k = 10
     smooth = np.convolve(alt, np.ones(k) / k, mode="same")
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5), gridspec_kw={"width_ratios": [2, 1]})
+    fig, axes = plt.subplots(1, 2, figsize=S(14, 5), gridspec_kw={"width_ratios": [2, 1]})
     ax = axes[0]
     ax.plot(t, alt, c="#9DB9D9", lw=0.8, label="单次读数换算高度")
     ax.plot(t, smooth, c=BLUE, lw=1.8, label="滑动平均（1 s）")
     ax.plot(t, h, c="k", ls="--", lw=1.2, label="真实飞行高度")
     ax.set_xlabel("时间 / s")
     ax.set_ylabel("相对高度 / m")
-    ax.legend(loc="upper right", fontsize=9)
-    ax.set_title("(a) 起飞 → 25 m 悬停 → 降落")
+    ax.legend(loc="upper right", fontsize=F(9))
+    ax.set_title(T("(a) 起飞 → 25 m 悬停 → 降落", "(a) 起飞—悬停—降落"))
     ax = axes[1]
     e1, e2 = alt - h, smooth - h
     ax.hist(e1, bins=40, color="#9DB9D9", alpha=0.9, label=f"单次读数 RMS {np.sqrt(np.mean(e1 ** 2)):.2f} m")
     ax.hist(e2[k:-k], bins=40, color=BLUE, alpha=0.7, label=f"滑动平均 RMS {np.sqrt(np.mean(e2[k:-k] ** 2)):.2f} m")
     ax.set_xlabel("高度误差 / m")
-    ax.legend(fontsize=9)
+    ax.legend(fontsize=F(9))
     ax.set_title("(b) 测高误差分布")
-    fig.suptitle(f"气压测高仿真：气压噪声标准差 {noise_pa} Pa（按 BMP388 相对精度 ±8 Pa 取 2 倍标准差），起飞前 5 s 采样为地面参考", fontsize=12.5)
+    _suptitle(fig, f"气压测高仿真：气压噪声标准差 {noise_pa} Pa（按 BMP388 相对精度 ±8 Pa 取 2 倍标准差），起飞前 5 s 采样为地面参考", fontsize=F(12.5))
     fig.tight_layout()
     _save(fig, out, "viz_baro.png")
     plt.close(fig)
@@ -436,6 +471,71 @@ def fig_baro(seed, out, noise_pa=3.6):
 # ---------------------------------------------------------------------------
 
 POLICY_NAME = {"coop": "空地协同", "ground_known": "仅地面（已知坐标）", "ground_search": "仅地面（往返搜索）"}
+
+
+def _map_rgb(cur, init):
+    """小车地图着色：灰=航拍障碍，橙=雷达新增，浅蓝=雷达清除的航拍误检"""
+    rgb = np.ones(cur.shape + (3,))
+    rgb[(cur == 1) & (init == 1)] = (0.40, 0.40, 0.40)
+    rgb[(cur == 1) & (init == 0)] = (0.88, 0.48, 0.14)
+    rgb[(cur == 0) & (init == 1)] = (0.74, 0.85, 0.96)
+    return rgb
+
+
+def fig_demo(seed, out):
+    """三种策略在同一场景中的对比（与 rescue.sim --figure 相同，报告模式下为紧凑排版）"""
+    _plt()
+    scene, dets, aerial, _ = prepare_trial(seed)
+    results = [run_mission(scene, p, np.random.default_rng(seed + 1000), aerial) for p in POLICIES]
+    Path(out).mkdir(parents=True, exist_ok=True)
+    plot_mission(scene, dets, aerial, results, Path(out) / "viz_demo.png", compact=REPORT)
+    print(f"[✓] {Path(out) / 'viz_demo.png'}")
+
+
+def fig_frames(seed, out):
+    """两种策略的过程截图：左列真实场景与激光雷达，右列小车实时地图"""
+    plt = _plt()
+    from matplotlib.collections import LineCollection
+    from matplotlib.patches import Circle, Polygon
+    scene, _, aerial, _ = prepare_trial(seed)
+    tr = scene.truth
+    fig, axes = plt.subplots(2, 2, figsize=S(12, 10.5, (6.4, 5.8)))
+    for row, policy in enumerate(("coop", "ground_search")):
+        res, frames = _record(scene, aerial, policy, seed)
+        if policy == "coop":
+            st = next((f for f in frames if f["fixes"] >= 3), frames[-1])
+        else:
+            st = frames[int(len(frames) * 0.75)]
+        upto = frames.index(st) + 1
+        traj = np.array([f["pose"][:2] for f in frames[:upto]])
+        x, y, th = st["pose"]
+        init = aerial.gridmap.grid if policy == "coop" else np.zeros_like(aerial.gridmap.grid)
+        ax1, ax2 = axes[row]
+        ax1.imshow(tr.grid, cmap="Greys", extent=_extent(tr), vmin=0, vmax=1.6)
+        for o in scene.obstacles:
+            if not o.visible_from_air:
+                ax1.add_patch(Polygon(o.poly, fill=False, ec=ORANGE, lw=1.2))
+        a = th + np.radians(st["rel"][::4])
+        r = np.minimum(st["ranges"][::4], 8.0)
+        ax1.add_collection(LineCollection([[(x, y), (x + rr * math.cos(aa), y + rr * math.sin(aa))] for aa, rr in zip(a, r)],
+                                          colors=ORANGE, linewidths=0.4, alpha=0.5))
+        ax2.imshow(_map_rgb(st["map_grid"], init), extent=_extent(st["map"]), interpolation="nearest")
+        for ax in (ax1, ax2):
+            ax.plot(traj[:, 0], traj[:, 1], c=BLUE, lw=1.6)
+            ax.plot(st["path"][:, 0], st["path"][:, 1], c=GREEN, lw=1.1, ls="--")
+            ax.add_patch(Circle((x, y), 0.55, fc=NAVY, ec="w", lw=1, zorder=5))
+            ax.plot(*scene.person_xy, "*", c=COLORS["person"], ms=M(14), zorder=6)
+            ax.set_xlim(*_extent(tr)[:2])
+            ax.set_ylim(*_extent(tr)[2:])
+            ax.set_xlabel("x / m")
+            ax.set_ylabel("y / m")
+        tag = "abcd"[row * 2:row * 2 + 2]
+        ax1.set_title(f"({tag[0]}) {POLICY_NAME[policy]}，t = {st['t']:.1f} s：真实场景与激光雷达")
+        ax2.set_title(f"({tag[1]}) {POLICY_NAME[policy]}：小车实时地图")
+    _suptitle(fig, "搜救过程截图（右列：灰=航拍障碍，橙=雷达新增，浅蓝=雷达清除，绿虚线=当前路径）", fontsize=F(13))
+    fig.tight_layout()
+    _save(fig, out, "viz_frames.png")
+    plt.close(fig)
 
 
 def animate(seed, policy, out_file, every=None, fps=10):
@@ -452,13 +552,7 @@ def animate(seed, policy, out_file, every=None, fps=10):
     tr = scene.truth
     gm0 = frames[0]["map"]
     init = aerial.gridmap.grid if policy == "coop" else np.zeros_like(aerial.gridmap.grid)
-
-    def map_rgb(cur):
-        rgb = np.ones(cur.shape + (3,))
-        rgb[(cur == 1) & (init == 1)] = (0.40, 0.40, 0.40)   # 航拍障碍
-        rgb[(cur == 1) & (init == 0)] = (0.88, 0.48, 0.14)   # 雷达新增
-        rgb[(cur == 0) & (init == 1)] = (0.74, 0.85, 0.96)   # 雷达清除的误检
-        return rgb
+    map_rgb = lambda cur: _map_rgb(cur, init)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.8))
     ax1.imshow(tr.grid, cmap="Greys", extent=_extent(tr), vmin=0, vmax=1.6)
@@ -527,7 +621,7 @@ def animate(seed, policy, out_file, every=None, fps=10):
           f"{res.time_s:.1f} s，{res.distance_m:.1f} m）")
 
 
-FIGS = {"mapping": fig_mapping, "astar": fig_astar, "gap": fig_gap, "person": fig_person,
+FIGS = {"mapping": fig_mapping, "astar": fig_astar, "gap": fig_gap, "person": fig_person, "demo": fig_demo, "frames": fig_frames,
         "control": fig_control, "comm": fig_comm, "baro": fig_baro}
 
 
@@ -539,7 +633,10 @@ def main():
     ap.add_argument("--policy", choices=list(POLICY_NAME), default="coop")
     ap.add_argument("--every", type=int, default=None, help="动画每隔几个仿真步取一帧（默认自动）")
     ap.add_argument("--gif", action="store_true", help="all 模式下动画导出为 gif（默认 mp4，需要 ffmpeg）")
+    ap.add_argument("--report", action="store_true", help="报告排版：缩小画布、去掉总标题，按 14～15 cm 宽插入 Word")
     args = ap.parse_args()
+    global REPORT
+    REPORT = args.report
     if args.what in FIGS:
         FIGS[args.what](args.seed, args.out)
     elif args.what == "animate":
@@ -548,6 +645,8 @@ def main():
     else:
         for fn in FIGS.values():
             fn(args.seed, args.out)
+        if args.report:
+            return
         ext = ".gif" if args.gif else ".mp4"
         for pol in ("coop", "ground_search"):
             animate(args.seed, pol, str(Path(args.out) / f"sim_{pol}{ext}"), args.every)

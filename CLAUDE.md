@@ -35,7 +35,7 @@ The algorithms live in the `deploy_raspberry_pi/rescue/` package (numpy-only exc
 | `deploy_raspberry_pi/rescue/person_locate.py` | Person distance/bearing from car camera intrinsics + mount height; `PersonTracker` multi-frame confirmation |
 | `deploy_raspberry_pi/rescue/comm.py` | MQTT (paho 1.x/2.x) + loopback link; compressed grid-map messages |
 | `deploy_raspberry_pi/rescue/sim.py` | Full air-ground simulation and Monte Carlo comparison; `run_mission(on_step=...)` callback for recording |
-| `deploy_raspberry_pi/rescue/viz.py` | Per-module figures (mapping, astar, gap, person, control, comm, baro) and mission animation (mp4/gif) |
+| `deploy_raspberry_pi/rescue/viz.py` | Per-module figures (mapping, astar, gap, person, control, comm, baro, demo, frames) and mission animation (mp4/gif); `--report` renders compact print versions for the Word report |
 | `deploy_raspberry_pi/drone_node.py` / `car_node.py` | Air-side and ground-side entry points; `car_node` also runs lidar map correction + replanning and optional car-camera person detection (`--person-model`) |
 | `deploy_raspberry_pi/rescue/baro.py` / `pose_publisher.py` | BMP388 I2C driver (Bosch float compensation) + relative altimeter; pose node publishing `{altitude, pitch, roll, yaw}` to MQTT `rescue/pose` (IMU attitude from a ROS 2 `sensor_msgs/Imu` topic) for `drone_node.py --pose-topic` |
 | `deploy_raspberry_pi/benchmark.py` | ONNX/NCNN export, INT8, FPS comparison, long-run soak test |

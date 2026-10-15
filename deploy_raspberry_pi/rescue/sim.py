@@ -432,7 +432,8 @@ def map_quality(scene: Scene, aerial) -> dict:
 # 可视化
 # ---------------------------------------------------------------------------
 
-def plot_mission(scene, dets, aerial, results, out_path):
+def plot_mission(scene, dets, aerial, results, out_path, compact=False):
+    """compact=True 时为报告排版：画布约 18 cm 宽、短标题、300 dpi，插入 Word 后文字约 7 磅"""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -442,7 +443,12 @@ def plot_mission(scene, dets, aerial, results, out_path):
                                        "Microsoft YaHei", "DejaVu Sans"]
     plt.rcParams["axes.unicode_minus"] = False
     colors = {"debris": "#8c6d46", "stone": "#7f7f7f", "wood": "#4f7f3a", "person": "#d62728"}
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6.2))
+    k = 0.5 if compact else 1.0                      # 标记缩放
+    tfs, lfs = (7.2, 5.4) if compact else (10.5, 8)  # 标题、图例字号
+    if compact:
+        plt.rcParams.update({"font.size": 6.5, "xtick.labelsize": 5.8, "ytick.labelsize": 5.8,
+                             "axes.labelsize": 6.3, "axes.linewidth": 0.5})
+    fig, axes = plt.subplots(1, 3, figsize=(7.2, 2.65) if compact else (18, 6.2))
 
     # (a) 无人机视角 + 检测框
     ax = axes[0]
@@ -457,7 +463,7 @@ def plot_mission(scene, dets, aerial, results, out_path):
     ax.set_xlim(0, scene.cam.width)
     ax.set_ylim(scene.cam.height, 0)
     ax.set_aspect("equal")
-    ax.set_title("(a) 无人机视角与检测框（半透明为空中不可见障碍）", fontsize=10.5)
+    ax.set_title("(a) 无人机视角与检测框" if compact else "(a) 无人机视角与检测框（半透明为空中不可见障碍）", fontsize=tfs)
 
     # (b) 航拍栅格地图 + 初始 A* 路径
     gm = aerial.gridmap
@@ -469,12 +475,12 @@ def plot_mission(scene, dets, aerial, results, out_path):
     coop = next(r for r in results if r.policy == "coop")
     if coop.initial_path:
         p = np.array(coop.initial_path)
-        ax.plot(p[:, 0], p[:, 1], "-o", c="#1f77b4", ms=3, lw=2, label="A* 初始路径")
+        ax.plot(p[:, 0], p[:, 1], "-o", c="#1f77b4", ms=3 * k, lw=2 * k, label="A* 初始路径")
     for px, py, _ in aerial.persons_xy:
-        ax.plot(px, py, "r*", ms=14, label="航拍人员坐标")
-    ax.plot(*scene.start_pose[:2], "gs", ms=9, label="小车起点")
-    ax.set_title(f"(b) 栅格地图与 A* 初始路径（{gm.resolution} m/格）", fontsize=10.5)
-    ax.legend(loc="lower right", fontsize=8)
+        ax.plot(px, py, "r*", ms=14 * k, label="航拍人员坐标")
+    ax.plot(*scene.start_pose[:2], "gs", ms=9 * k, label="小车起点")
+    ax.set_title(f"(b) 栅格地图与 A* 初始路径（{gm.resolution} m/格）", fontsize=tfs)
+    ax.legend(loc="lower right", fontsize=lfs)
 
     # (c) 真实环境中的实际轨迹
     ax = axes[2]
@@ -484,24 +490,29 @@ def plot_mission(scene, dets, aerial, results, out_path):
     ax.imshow(t.grid, cmap="Greys", extent=text, vmin=0, vmax=1.6)
     for o in scene.obstacles:
         if not o.visible_from_air:
-            ax.add_patch(Polygon(o.poly, closed=True, fc="none", ec="orange", lw=1.5))
+            ax.add_patch(Polygon(o.poly, closed=True, fc="none", ec="orange", lw=1.5 * k))
     style = {"coop": ("#1f77b4", "空地协同"), "ground_known": ("#ff7f0e", "仅地面(已知坐标)"),
              "ground_search": ("#9467bd", "仅地面(搜索)")}
     for r in results:
         tr = np.array(r.trajectory)
         c, name = style[r.policy]
-        ax.plot(tr[:, 0], tr[:, 1], c=c, lw=2,
+        ax.plot(tr[:, 0], tr[:, 1], c=c, lw=2 * k,
                 label=f"{name}: {'成功' if r.success else '失败'} {r.time_s:.0f}s {r.distance_m:.1f}m")
-    ax.plot(*scene.person_xy, "r*", ms=14, label="受困人员（真实）")
-    ax.plot(*scene.start_pose[:2], "gs", ms=9)
-    ax.set_title("(c) 三种策略的行驶轨迹（橙框为仅雷达可见障碍）", fontsize=10.5)
-    ax.legend(loc="lower right", fontsize=8)
+    ax.plot(*scene.person_xy, "r*", ms=14 * k, label="受困人员（真实）")
+    ax.plot(*scene.start_pose[:2], "gs", ms=9 * k)
+    ax.set_title("(c) 三种策略的行驶轨迹" if compact else "(c) 三种策略的行驶轨迹（橙框为仅雷达可见障碍）", fontsize=tfs)
+    if compact:
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=lfs)
+    else:
+        ax.legend(loc="lower right", fontsize=lfs)
     for ax in axes[1:]:
         ax.set_xlabel("x / m")
         ax.set_ylabel("y / m")
     fig.tight_layout()
-    fig.savefig(out_path, dpi=130)
+    fig.savefig(out_path, dpi=300 if compact else 130)
     plt.close(fig)
+    if compact:
+        plt.rcParams.update(plt.rcParamsDefault)
 
 
 # ---------------------------------------------------------------------------
