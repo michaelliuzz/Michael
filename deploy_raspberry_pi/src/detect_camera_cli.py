@@ -24,7 +24,7 @@ except ImportError:
 class CameraDetector:
     """树莓派摄像头检测器"""
     
-    def __init__(self, model_path, conf=0.25, use_picamera=False):
+    def __init__(self, model_path, conf=0.25, use_picamera=False, imgsz=640):
         """
         初始化检测器
         
@@ -36,6 +36,7 @@ class CameraDetector:
         self.model_path = model_path
         self.conf = conf
         self.use_picamera = use_picamera
+        self.imgsz = imgsz
         
         # 加载模型
         print("[加载中] 正在加载 YOLO 模型...")
@@ -73,7 +74,6 @@ class CameraDetector:
         if not cap.isOpened():
             print("[✗] 无法打开摄像头")
             sys.exit(1)
-            sys.exit(1)
         
         # 设置分辨率和帧率
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -87,7 +87,8 @@ class CameraDetector:
         print(f"[✓] 摄像头已打开 ({width}x{height}, {fps} FPS)")
         return cap, False
     
-    def run(self, save_video=False, duration=0, show_fps=True, flip_h=False, flip_v=False):
+    def run(self, save_video=False, duration=0, show_fps=True, flip_h=False, flip_v=False,
+            headless=False, skip_frames=0):
         """
         运行实时检测
         
@@ -97,6 +98,8 @@ class CameraDetector:
             show_fps: 是否显示 FPS
             flip_h: 水平翻转
             flip_v: 垂直翻转
+            headless: 不弹出显示窗口（SSH / 无显示器时使用，Ctrl+C 停止）
+            skip_frames: 每检测 1 帧后跳过的帧数（降低 CPU 负载，跳过的帧复用上次结果）
         """
         camera, is_picamera = self.open_camera()
         
@@ -117,6 +120,10 @@ class CameraDetector:
         # 主循环
         frame_count = 0
         total_detections = 0
+        infer_count = 0       # 实际做推理的帧数（跳帧时少于总帧数）
+        infer_time = 0.0      # 模型推理累计耗时（不含采集、绘图、显示、写视频）
+        class_counts = {}
+        detections = None
         start_time = time.time()
         loop_start = time.time()
         
@@ -127,8 +134,9 @@ class CameraDetector:
             while True:
                 # 读取帧
                 if is_picamera:
+                    # XRGB8888 在内存中按 B,G,R,X 排列，转换为 OpenCV/YOLO 使用的 BGR
                     array = camera.capture_array()
-                    frame = cv2.cvtColor(array, cv2.COLOR_RGB2BGR)
+                    frame = cv2.cvtColor(array, cv2.COLOR_BGRA2BGR)
                 else:
                     ret, frame = camera.read()
                     if not ret:
@@ -142,14 +150,21 @@ class CameraDetector:
                 if flip_v:
                     frame = cv2.flip(frame, 0)
                 
-                # 运行检测
-                results = self.model(frame, conf=self.conf, verbose=False)
-                detections = results[0]
-                num_detections = len(detections.boxes)
-                total_detections += num_detections
-                
-                # 绘制检测结果
-                annotated = detections.plot()
+                # 运行检测（跳帧时复用上一帧的检测结果）
+                if detections is None or skip_frames <= 0 or (frame_count - 1) % (skip_frames + 1) == 0:
+                    t_inf = time.time()
+                    results = self.model(frame, conf=self.conf, imgsz=self.imgsz, verbose=False)
+                    infer_time += time.time() - t_inf
+                    infer_count += 1
+                    detections = results[0]
+                    num_detections = len(detections.boxes)
+                    total_detections += num_detections
+                    for c in detections.boxes.cls.tolist():
+                        name = self.model.names[int(c)]
+                        class_counts[name] = class_counts.get(name, 0) + 1
+                    annotated = detections.plot()
+                else:
+                    annotated = detections.plot(img=frame)
                 
                 # 计算 FPS
                 elapsed_total = time.time() - start_time
@@ -161,13 +176,19 @@ class CameraDetector:
                     cv2.putText(annotated, info_text, (10, 30),
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
                 
-                # 显示帧
-                cv2.imshow("YOLO11 Person Detection", annotated)
-                
                 # 保存帧
                 if out:
                     out.write(annotated)
-                
+
+                if headless:
+                    if duration > 0 and (time.time() - loop_start) > duration:
+                        print(f"\n[完成] 达到设定时长 ({duration}s)")
+                        break
+                    continue
+
+                # 显示帧
+                cv2.imshow("YOLO11 Detection", annotated)
+
                 # 检查互动和退出条件
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
@@ -200,16 +221,21 @@ class CameraDetector:
             if out:
                 out.release()
             
-            cv2.destroyAllWindows()
+            if not headless:
+                cv2.destroyAllWindows()
             
             # 统计信息
             total_time = time.time() - start_time
             print("\n" + "="*50)
             print("[统计]")
-            print(f"  总帧数: {frame_count}")
-            print(f"  总检测人数: {total_detections}")
-            print(f"  平均人数/帧: {total_detections/frame_count if frame_count > 0 else 0:.2f}")
-            print(f"  平均 FPS: {frame_count/total_time if total_time > 0 else 0:.1f}")
+            print(f"  总帧数: {frame_count}（其中推理 {infer_count} 帧）")
+            print(f"  总检测目标数: {total_detections}")
+            print(f"  平均目标数/推理帧: {total_detections/infer_count if infer_count > 0 else 0:.2f}")
+            if class_counts:
+                print("  各类别累计: " + ", ".join(f"{k}={v}" for k, v in sorted(class_counts.items())))
+            print(f"  端到端 FPS（总帧数/总耗时，含采集、绘图、显示、存视频）: "
+                  f"{frame_count/total_time if total_time > 0 else 0:.1f}")
+            print(f"  纯推理 FPS（推理帧数/推理耗时）: {infer_count/infer_time if infer_time > 0 else 0:.1f}")
             print(f"  总耗时: {total_time:.1f}s")
             if output_path:
                 print(f"  结果视频: {output_path}")
@@ -252,6 +278,12 @@ def main():
                        help='垂直翻转视频')
     parser.add_argument('--no-fps', action='store_true',
                        help='不显示 FPS')
+    parser.add_argument('--imgsz', type=int, default=640,
+                       help='推理输入尺寸，320 可显著提升树莓派帧率 (默认: 640)')
+    parser.add_argument('--skip-frames', type=int, default=0,
+                       help='每检测 1 帧跳过 N 帧 (默认: 0)')
+    parser.add_argument('--headless', action='store_true',
+                       help='不弹出显示窗口（SSH/无显示器运行）')
     
     args = parser.parse_args()
     
@@ -264,7 +296,8 @@ def main():
     detector = CameraDetector(
         model_path=args.model,
         conf=args.conf,
-        use_picamera=args.picamera
+        use_picamera=args.picamera,
+        imgsz=args.imgsz
     )
     
     detector.run(
@@ -272,7 +305,9 @@ def main():
         duration=args.duration,
         show_fps=not args.no_fps,
         flip_h=args.flip_h,
-        flip_v=args.flip_v
+        flip_v=args.flip_v,
+        headless=args.headless,
+        skip_frames=args.skip_frames
     )
 
 

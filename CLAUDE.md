@@ -12,6 +12,8 @@ This repository implements a YOLO11-based obstacle and person detection + pathfi
 
 Detection can also be run in a standalone streaming loop (`deploy_raspberry_pi/src/detect_camera_cli.py`) for continuous real-time monitoring.
 
+The algorithms live in the `deploy_raspberry_pi/rescue/` package (numpy-only except `comm`), mapped 1:1 to the project application (申报书) research items — see `docs/结项成果说明.md`. `修改后的yolo` and `astar` are now thin compatibility wrappers around `drone_node.py` and `rescue.planner`. No drone/car hardware exists yet; `rescue/sim.py` simulates the full air-ground loop.
+
 ## Key Files
 
 | File | Role |
@@ -25,6 +27,16 @@ Detection can also be run in a standalone streaming loop (`deploy_raspberry_pi/s
 | `deploy_raspberry_pi/raspberry_pi_setup_venv.sh` | One-shot venv setup (installs system pkgs + Python deps via Tsinghua/Aliyun mirrors) |
 | `deploy_raspberry_pi/start_venv.sh` | Activates venv and launches detection |
 | `deploy_raspberry_pi/autostart_detection.sh` | Crontab `@reboot` helper; set `PROJECT_DIR` before use |
+| `deploy_raspberry_pi/rescue/geo_mapping.py` | Camera model, GSD, pixel↔ground projection with IMU attitude, grid rasterisation, Manhattan inflation, goal selection |
+| `deploy_raspberry_pi/rescue/planner.py` | A* (octile heuristic, no corner cutting), path simplification |
+| `deploy_raspberry_pi/rescue/lidar_gap.py` | 2D-lidar d(θ) profile, gap detection, corridor-checked desired heading |
+| `deploy_raspberry_pi/rescue/local_map.py` | `LidarMapper`: lidar hits mark obstacles, ray carving clears false aerial obstacles; shared by `car_node.py` and `sim.py` |
+| `deploy_raspberry_pi/rescue/control.py` | Pure pursuit, PID heading control, differential drive, recovery, GPIO motor driver |
+| `deploy_raspberry_pi/rescue/person_locate.py` | Person distance/bearing from car camera intrinsics + mount height; `PersonTracker` multi-frame confirmation |
+| `deploy_raspberry_pi/rescue/comm.py` | MQTT (paho 1.x/2.x) + loopback link; compressed grid-map messages |
+| `deploy_raspberry_pi/rescue/sim.py` | Full air-ground simulation and Monte Carlo comparison |
+| `deploy_raspberry_pi/drone_node.py` / `car_node.py` | Air-side and ground-side entry points; `car_node` also runs lidar map correction + replanning and optional car-camera person detection (`--person-model`) |
+| `deploy_raspberry_pi/benchmark.py` | ONNX/NCNN export, INT8, FPS comparison, long-run soak test |
 
 ## Setup (Raspberry Pi)
 
@@ -54,9 +66,9 @@ python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi
 python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi/best_person.pt \
     --save --duration 60 --no-fps
 
-# Low-resource mode (skip-frames must be added to CLI if needed)
+# Low-resource / headless mode: 320 input, detect every other frame, no window
 python3 deploy_raspberry_pi/src/detect_camera_cli.py --model deploy_raspberry_pi/best_person.pt \
-    --no-fps --conf 0.3
+    --imgsz 320 --skip-frames 1 --headless --no-fps
 
 # Generate grid map from one captured frame
 python3 修改后的yolo   # produces grid.npy in the working directory
@@ -65,21 +77,31 @@ python3 修改后的yolo   # produces grid.npy in the working directory
 python3 astar          # reads grid.npy, prints path, shows ASCII visualisation
 ```
 
+## Tests and simulation
+
+```bash
+cd deploy_raspberry_pi
+python3 -m pytest tests -q                                        # numpy-only unit tests
+python3 -m rescue.sim --seed 1 --figure sim.png                   # single run + figure
+python3 -m rescue.sim --trials 30 --seed 100 --json results.json  # Monte Carlo (writes docs data)
+```
+
 ## Architecture Details
 
 ### Camera abstraction (`detect_camera_cli.py`)
 `CameraDetector.open_camera()` tries `picamera2` first; falls back to `cv2.VideoCapture(0)`. Both paths are normalised to BGR numpy arrays before inference. The return value is `(camera_handle, is_picamera: bool)` so the cleanup path knows which API to call.
 
-### Grid map (`修改后的yolo`)
-- Resolution: 1 grid cell = `GRID_SIZE × GRID_SIZE` pixels (default 20 px)
-- Obstacle classes are configurable via `OBSTACLE_CLASSES`
-- Bounding boxes are mapped to grid indices with integer division; all cells inside a box are set to 1
-- Grid is saved with `np.save("grid.npy", grid)`
+### Grid map (`rescue/geo_mapping.py`, via `drone_node.py` / `修改后的yolo`)
+- Ground frame: origin below the drone, +x = image right, +y = image up; `grid[row, col]` with row 0 = top
+- GSD from camera hfov + altitude; box corners are ray-cast to the ground using pitch/roll/yaw
+- Resolution in metres per cell (default 0.25); obstacles inflated by Manhattan radius (`--inflate`)
+- Model classes: `best_collapsed.pt` → `collapsed` (obstacle); `best_person.pt` → `person` (target, never an obstacle)
+- Outputs `grid.npy`, `grid_meta.json` (georeference + goal), `grid_map.png`
 
-### A\* (`astar`)
-- Supports 4-connected (Manhattan heuristic) and 8-connected (`allow_diag=True`, diagonal cost ≈ 1.414)
-- `nearest_free()` auto-snaps start/goal to a free cell if they fall on an obstacle
-- Default: start = bottom-centre row, goal = top-centre row (modify `start`/`goal` variables directly)
+### A\* (`rescue/planner.py`, via `astar`)
+- 4-connected (Manhattan) or 8-connected (octile heuristic, diagonal cost √2, corner cutting forbidden)
+- `nearest_free()` snaps start/goal onto free cells
+- `astar` wrapper: start = bottom-centre; goal from `grid_meta.json` if present, else top-centre
 
 ## Models
 
@@ -88,7 +110,7 @@ Two `.pt` files are included in `deploy_raspberry_pi/`:
 - `best_person.pt` — person detection
 - `best_collapsed.pt` — collapsed-structure / debris detection
 
-To switch models, pass the path via `--model`. The `修改后的yolo` script uses `MODEL_PATH = "best.pt"` — update that variable to point to one of the bundled models.
+To switch models, pass the path via `--model` (`drone_node.py` accepts several). `修改后的yolo` runs both bundled models by default.
 
 ## Dependencies
 

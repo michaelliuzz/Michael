@@ -4,6 +4,34 @@
 
 ---
 
+## 🚁 空地协同搜救系统（结项版新增）
+
+与申报书研究内容一一对应的算法包位于 `deploy_raspberry_pi/rescue/`，详见 [docs/结项成果说明.md](docs/结项成果说明.md)。
+
+| 模块 | 申报书对应 | 说明 |
+|------|-----------|------|
+| `rescue/geo_mapping.py` | 研究内容(3) | 相机 FOV + 高度 → GSD；结合 IMU 姿态把检测框投影到地面；米制栅格化、曼哈顿膨胀、自动选终点 |
+| `rescue/planner.py` | 研究内容(3) | A*（4/8 邻域，八方向启发式，禁止切角）+ 航点精简 |
+| `rescue/lidar_gap.py` | 研究内容(1) | 激光雷达 d(θ) 曲线、1 m 安全阈值、前方 120° 缝隙检测、期望航向 |
+| `rescue/local_map.py` | 研究内容(1)(3) | 地面雷达修正航拍地图：命中点补障碍、射线清除假障碍；路径受阻判断 |
+| `rescue/control.py` | 预期成果 | 纯追踪 + PID 航向控制 + 差速/履带电机驱动 |
+| `rescue/person_locate.py` | 研究内容(4) | 由相机内参与安装高度估计人体距离与方位；多帧确认防误检 |
+| `rescue/comm.py` | 空地通信 | MQTT 传输压缩栅格地图与人员坐标 |
+| `rescue/sim.py` | 系统验证 | 无硬件条件下的空地协同全流程仿真与对比实验 |
+| `drone_node.py` / `car_node.py` | 系统集成 | 空中端 / 地面端节点程序 |
+| `benchmark.py` | 难点(1) | ONNX/NCNN 导出、INT8 量化、FPS 对比、3 小时稳定性测试 |
+
+```bash
+cd deploy_raspberry_pi
+python3 -m pytest tests -q                                        # 单元测试（只需 numpy）
+python3 -m rescue.sim --seed 1 --figure sim.png                   # 单次仿真并出图
+python3 -m rescue.sim --trials 30 --seed 100 --json results.json  # 蒙特卡洛对比实验
+python3 drone_node.py --model best_collapsed.pt --source test.jpg --altitude 25 --once
+python3 car_node.py --mqtt localhost --dry-run
+```
+
+---
+
 ## ⚡ 3 步快速部署
 
 ### 1️⃣ 自动安装依赖
