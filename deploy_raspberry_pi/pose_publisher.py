@@ -4,8 +4,8 @@
 以 JSON {altitude, pitch, roll, yaw} 发布到 MQTT 话题 rescue/pose，供 drone_node.py --pose-topic 使用。
 
 示例:
-    # 只读气压计，姿态取 0（先验证气压测高）
-    python3 pose_publisher.py --bmp388 --mqtt localhost --print
+    # 只读气压计，姿态取 0（先验证气压测高），同时记录到 CSV
+    python3 pose_publisher.py --bmp388 --print --csv baro_test.csv
 
     # 气压计 + IMU（IMU 厂家 ROS 2 驱动已发布 sensor_msgs/Imu 到 /imu/data）
     python3 pose_publisher.py --bmp388 --ros-imu /imu/data --mqtt localhost
@@ -73,6 +73,7 @@ def main():
     ap.add_argument("--roll-sign", type=float, default=1.0, choices=[1.0, -1.0])
     ap.add_argument("--use-yaw", action="store_true", help="同时发布航向角（默认 0，使地图与图像方向一致）")
     ap.add_argument("--print", action="store_true", help="在终端打印每次发布的数据")
+    ap.add_argument("--csv", default=None, help="把每次读数追加记录到 CSV 文件（实测数据整理用）")
     args = ap.parse_args()
 
     altimeter = None
@@ -86,6 +87,15 @@ def main():
     if args.mqtt:
         from rescue.comm import MqttLink
         link = MqttLink(args.mqtt, client_id="pose_publisher")
+
+    log = None
+    if args.csv:
+        import csv
+        new = not Path(args.csv).exists()
+        log_file = open(args.csv, "a", newline="", encoding="utf-8")
+        log = csv.writer(log_file)
+        if new:
+            log.writerow(["t", "altitude_m", "pressure_hpa", "temp_c", "pitch_deg", "roll_deg", "yaw_deg"])
 
     period = 1.0 / args.rate
     try:
@@ -103,12 +113,19 @@ def main():
                     msg["yaw"] = rpy[2]
             if link:
                 link.publish(args.topic, json.dumps(msg).encode())
+            if log:
+                log.writerow([f"{t0:.3f}", f"{msg['altitude']:.3f}", msg.get("pressure_hpa", ""),
+                              msg.get("temp_c", ""), f"{msg['pitch']:.2f}", f"{msg['roll']:.2f}", f"{msg['yaw']:.2f}"])
+                log_file.flush()
             if args.print or not link:
                 print(f"高度 {msg['altitude']:7.2f} m  俯仰 {msg['pitch']:6.2f}°  横滚 {msg['roll']:6.2f}°"
                       + (f"  气压 {msg['pressure_hpa']:.2f} hPa  温度 {msg['temp_c']:.1f} °C" if altimeter else ""))
             time.sleep(max(0.0, period - (time.time() - t0)))
     except KeyboardInterrupt:
         pass
+    finally:
+        if log:
+            log_file.close()
 
 
 if __name__ == "__main__":
