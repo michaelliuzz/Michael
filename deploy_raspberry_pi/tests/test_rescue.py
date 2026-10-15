@@ -450,6 +450,14 @@ def test_run_mission_on_step_reports_every_step():
     assert steps[-1]["pose"] == res.trajectory[-1] and steps[-1]["map"] is res.final_map
 
 
+def test_prepare_trial_recall_controls_aerial_obstacle_detections():
+    from rescue.sim import prepare_trial
+    _, full, _, _ = prepare_trial(1, recall=1.0)
+    _, none, _, _ = prepare_trial(1, recall=0.0)
+    assert [d.cls_name for d in none] == ["person"]                 # 人员检测不受障碍召回率影响
+    assert len(full) > len(prepare_trial(1)[1]) > len(none)
+
+
 def test_gap_demo_scene_turns_away_from_blocked_target():
     from rescue.viz import gap_demo_scan
     cfg = GapConfig(car_width=0.25, margin=0.08)

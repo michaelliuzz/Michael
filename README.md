@@ -22,12 +22,14 @@
 | `drone_node.py` / `car_node.py` | 系统集成 | 空中端 / 地面端节点程序 |
 | `rescue/baro.py` + `pose_publisher.py` | 研究内容(3) | BMP388 气压计读取与相对测高；IMU（ROS 2 `sensor_msgs/Imu`）姿态桥接；发布 `rescue/pose` 供 `drone_node.py --pose-topic` 使用 |
 | `benchmark.py` | 难点(1) | ONNX/NCNN 导出、INT8 量化、FPS 对比、3 小时稳定性测试 |
+| `yolo_examples.py` | 研究内容(2) | 两个模型在指定图片上的识别效果示例图（报告图 4-1） |
 
 ```bash
 cd deploy_raspberry_pi
 python3 -m pytest tests -q                                        # 单元测试（只需 numpy）
 python3 -m rescue.sim --seed 1 --figure sim.png                   # 单次仿真并出图
 python3 -m rescue.sim --trials 30 --seed 100 --json results.json  # 蒙特卡洛对比实验
+python3 -m rescue.sim --trials 30 --seed 100 --recall 0.25 --car-recall 0.25  # 按实测模型召回率的敏感性实验
 python3 drone_node.py --model best_collapsed.pt --source test.jpg --altitude 25 --once
 python3 car_node.py --mqtt localhost --dry-run
 python3 pose_publisher.py --bmp388 --print                        # 气压计相对测高（需启用 I2C）

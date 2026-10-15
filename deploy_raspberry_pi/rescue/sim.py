@@ -275,9 +275,10 @@ def lawnmower_goals(gm: GridMap, start_xy, spacing=5.0, margin=1.5):
 
 
 def run_mission(scene: Scene, policy: str, rng, aerial=None, max_time=None, dt=0.1,
-                inflate_m=0.3, on_step=None) -> MissionResult:
+                inflate_m=0.3, on_step=None, car_recall=0.9) -> MissionResult:
     """
     on_step: 可选回调，每个仿真步调用一次，参数为当前状态字典（供 rescue.viz 录制动画）
+    car_recall: 车载相机单帧人员检测召回率
     policy:
         "coop"         空地协同：航拍栅格地图 + 航拍人员坐标作为终点
         "ground_known" 仅地面（理想化对照）：空白地图，只靠雷达逐步建图，但假设已知人员真实坐标
@@ -358,9 +359,9 @@ def run_mission(scene: Scene, policy: str, rng, aerial=None, max_time=None, dt=0
                      "v": v, "w": w, "target": target, "path": follower.path, "map": gm,
                      "fixes": len(fixes), "homing": homing})
 
-        # 车载相机人员检测与定位（模型召回率按 0.9 计，需视线无遮挡）
+        # 车载相机人员检测与定位（单帧召回率 car_recall，需视线无遮挡）
         bb = project_person_to_car_camera(scene, pose, car_cam)
-        if bb is not None and rng.random() < 0.9:
+        if bb is not None and rng.random() < car_recall:
             dperson = math.hypot(scene.person_xy[0] - pose[0], scene.person_xy[1] - pose[1])
             bearing = math.atan2(scene.person_xy[1] - pose[1], scene.person_xy[0] - pose[0])
             _, rr = lidar_scan(scene.truth, (pose[0], pose[1], bearing), rng, n_beams=1,
@@ -520,23 +521,23 @@ def plot_mission(scene, dets, aerial, results, out_path, compact=False):
 POLICIES = ("coop", "ground_known", "ground_search")
 
 
-def prepare_trial(seed: int, trap=True):
-    """生成可解场景、模拟航拍检测并建图，返回 (scene, dets, aerial, 建图耗时 ms)"""
+def prepare_trial(seed: int, trap=True, recall=0.92):
+    """生成可解场景、模拟航拍检测（障碍召回率 recall）并建图，返回 (scene, dets, aerial, 建图耗时 ms)"""
     rng = np.random.default_rng(seed)
     for _ in range(20):
         scene = random_scene(rng, trap=trap)
         if scene_solvable(scene):
             break
-    dets = simulate_drone_detections(scene, rng)
+    dets = simulate_drone_detections(scene, rng, recall)
     t0 = time.perf_counter()
     aerial = build_grid_map(dets, scene.cam, scene.measured_pose, resolution=0.25,
                             inflate_radius_m=0.3)
     return scene, dets, aerial, (time.perf_counter() - t0) * 1000
 
 
-def run_trial(seed: int, trap=True, figure=None):
-    scene, dets, aerial, map_ms = prepare_trial(seed, trap)
-    results = [run_mission(scene, p, np.random.default_rng(seed + 1000), aerial)
+def run_trial(seed: int, trap=True, figure=None, recall=0.92, car_recall=0.9):
+    scene, dets, aerial, map_ms = prepare_trial(seed, trap, recall)
+    results = [run_mission(scene, p, np.random.default_rng(seed + 1000), aerial, car_recall=car_recall)
                for p in POLICIES]
     if figure:
         plot_mission(scene, dets, aerial, results, figure)
@@ -586,13 +587,16 @@ def main():
     ap.add_argument("--no-trap", action="store_true", help="不生成 U 型死路")
     ap.add_argument("--figure", type=str, default=None, help="保存第一个试验的可视化图")
     ap.add_argument("--json", type=str, default=None, help="保存统计结果")
+    ap.add_argument("--recall", type=float, default=0.92, help="航拍障碍检测召回率")
+    ap.add_argument("--car-recall", type=float, default=0.9, help="车载相机单帧人员检测召回率")
     args = ap.parse_args()
 
     rows = []
     for i in range(args.trials):
         seed = args.seed + i
         _, results, q = run_trial(seed, trap=not args.no_trap,
-                                  figure=args.figure if i == 0 else None)
+                                  figure=args.figure if i == 0 else None,
+                                  recall=args.recall, car_recall=args.car_recall)
         row = {"seed": seed, "map": q}
         for r in results:
             row[r.policy] = {k: getattr(r, k) for k in

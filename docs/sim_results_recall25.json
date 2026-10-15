@@ -1,0 +1,1124 @@
+{
+  "summary": {
+    "coop": {
+      "trials": 30,
+      "success_rate": 1.0,
+      "mean_time_s_success": 52.51,
+      "median_time_s_success": 52.75,
+      "mean_distance_m_success": 18.305666666666664,
+      "collisions_total": 0,
+      "mean_person_err_m": 0.5579052253678648
+    },
+    "ground_known": {
+      "trials": 30,
+      "success_rate": 0.9666666666666667,
+      "mean_time_s_success": 52.90344827586206,
+      "median_time_s_success": 52.1,
+      "mean_distance_m_success": 18.41551724137931,
+      "collisions_total": 0,
+      "mean_person_err_m": 0.5486276672813515
+    },
+    "ground_search": {
+      "trials": 30,
+      "success_rate": 1.0,
+      "mean_time_s_success": 273.18333333333334,
+      "median_time_s_success": 283.7,
+      "mean_distance_m_success": 94.32133333333333,
+      "collisions_total": 0,
+      "mean_person_err_m": 0.5628903077535603
+    },
+    "paired_time_ratio_coop_over_ground_known": 1.0,
+    "paired_trials_ground_known": 29,
+    "paired_time_ratio_coop_over_ground_search": 0.1826403974749995,
+    "paired_trials_ground_search": 30,
+    "obstacle_recall": 0.17058754041249072,
+    "obstacle_precision": 0.37377941942972964,
+    "obstacle_coverage_inflated": 0.26474704596383986,
+    "aerial_person_err_m": 0.3343413070353485,
+    "no_imu_obstacle_recall": 0.060895249688085136,
+    "no_imu_person_err_m": 1.2169714067947248,
+    "map_build_ms": 1.8552196666708671
+  },
+  "trials": [
+    {
+      "seed": 100,
+      "map": {
+        "obstacle_recall": 0.15614617940199335,
+        "obstacle_precision": 0.4723618090452261,
+        "obstacle_coverage_inflated": 0.21096345514950166,
+        "aerial_person_err_m": 0.19424491579181508,
+        "map_build_ms": 4.919641000014963,
+        "no_imu_obstacle_recall": 0.04865771812080537,
+        "no_imu_person_err_m": 1.0025873770856288
+      },
+      "coop": {
+        "success": true,
+        "time_s": 64.6,
+        "distance_m": 22.42,
+        "replans": 18,
+        "collisions": 0,
+        "person_err_m": 0.24832125719129855
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 64.6,
+        "distance_m": 22.42,
+        "replans": 18,
+        "collisions": 0,
+        "person_err_m": 0.24804721153272127
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 351.4,
+        "distance_m": 121.84,
+        "replans": 22,
+        "collisions": 0,
+        "person_err_m": 0.2538103291506041
+      }
+    },
+    {
+      "seed": 101,
+      "map": {
+        "obstacle_recall": 0.09357798165137615,
+        "obstacle_precision": 0.4857142857142857,
+        "obstacle_coverage_inflated": 0.13944954128440368,
+        "aerial_person_err_m": 0.32565392566565293,
+        "map_build_ms": 1.3411780000751605,
+        "no_imu_obstacle_recall": 0.001834862385321101,
+        "no_imu_person_err_m": 1.1734731235382716
+      },
+      "coop": {
+        "success": true,
+        "time_s": 54.9,
+        "distance_m": 19.17,
+        "replans": 10,
+        "collisions": 0,
+        "person_err_m": 0.9036371840370342
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 60.5,
+        "distance_m": 20.95,
+        "replans": 30,
+        "collisions": 0,
+        "person_err_m": 0.8500000111176561
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 168.9,
+        "distance_m": 58.23,
+        "replans": 27,
+        "collisions": 0,
+        "person_err_m": 0.851402731973091
+      }
+    },
+    {
+      "seed": 102,
+      "map": {
+        "obstacle_recall": 0.24435318275154005,
+        "obstacle_precision": 0.3814102564102564,
+        "obstacle_coverage_inflated": 0.3059548254620123,
+        "aerial_person_err_m": 0.09925128201989934,
+        "map_build_ms": 2.259212000126354,
+        "no_imu_obstacle_recall": 0.14395393474088292,
+        "no_imu_person_err_m": 1.1008055163908503
+      },
+      "coop": {
+        "success": true,
+        "time_s": 74.9,
+        "distance_m": 26.03,
+        "replans": 20,
+        "collisions": 0,
+        "person_err_m": 0.2495421303506199
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 52.1,
+        "distance_m": 18.17,
+        "replans": 14,
+        "collisions": 0,
+        "person_err_m": 0.24887040450410702
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 307.9,
+        "distance_m": 106.64,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": 0.24977173992585608
+      }
+    },
+    {
+      "seed": 103,
+      "map": {
+        "obstacle_recall": 0.13656387665198239,
+        "obstacle_precision": 0.23308270676691728,
+        "obstacle_coverage_inflated": 0.33259911894273125,
+        "aerial_person_err_m": 0.34691297099979335,
+        "map_build_ms": 2.511558999913177,
+        "no_imu_obstacle_recall": 0.058315334773218146,
+        "no_imu_person_err_m": 0.926189577416575
+      },
+      "coop": {
+        "success": true,
+        "time_s": 47.6,
+        "distance_m": 16.63,
+        "replans": 12,
+        "collisions": 0,
+        "person_err_m": 0.8674294217614809
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 48.3,
+        "distance_m": 16.86,
+        "replans": 3,
+        "collisions": 0,
+        "person_err_m": 0.8624136589225782
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 200.1,
+        "distance_m": 69.25,
+        "replans": 23,
+        "collisions": 0,
+        "person_err_m": 0.8464312566439851
+      }
+    },
+    {
+      "seed": 104,
+      "map": {
+        "obstacle_recall": 0.19784172661870503,
+        "obstacle_precision": 0.4247104247104247,
+        "obstacle_coverage_inflated": 0.21762589928057555,
+        "aerial_person_err_m": 0.15358666658822057,
+        "map_build_ms": 1.6249980001248332,
+        "no_imu_obstacle_recall": 0.03208556149732621,
+        "no_imu_person_err_m": 1.280888845848448
+      },
+      "coop": {
+        "success": true,
+        "time_s": 53.5,
+        "distance_m": 18.6,
+        "replans": 12,
+        "collisions": 0,
+        "person_err_m": 0.8593251869602575
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 51.7,
+        "distance_m": 17.99,
+        "replans": 20,
+        "collisions": 0,
+        "person_err_m": 0.8565730670327978
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 172.3,
+        "distance_m": 59.6,
+        "replans": 21,
+        "collisions": 0,
+        "person_err_m": 0.8869751136356586
+      }
+    },
+    {
+      "seed": 105,
+      "map": {
+        "obstacle_recall": 0.18181818181818182,
+        "obstacle_precision": 0.3310810810810811,
+        "obstacle_coverage_inflated": 0.22820037105751392,
+        "aerial_person_err_m": 0.29709443469865593,
+        "map_build_ms": 2.070163000098546,
+        "no_imu_obstacle_recall": 0.06496062992125984,
+        "no_imu_person_err_m": 1.3202578135310985
+      },
+      "coop": {
+        "success": true,
+        "time_s": 59.0,
+        "distance_m": 20.52,
+        "replans": 14,
+        "collisions": 0,
+        "person_err_m": 0.2501448203531352
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 58.9,
+        "distance_m": 20.49,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": 0.250254620965934
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 292.5,
+        "distance_m": 101.15,
+        "replans": 34,
+        "collisions": 0,
+        "person_err_m": 0.25728904868314206
+      }
+    },
+    {
+      "seed": 106,
+      "map": {
+        "obstacle_recall": 0.0868824531516184,
+        "obstacle_precision": 0.4766355140186916,
+        "obstacle_coverage_inflated": 0.141396933560477,
+        "aerial_person_err_m": 0.3616800898893376,
+        "map_build_ms": 1.0497420000774582,
+        "no_imu_obstacle_recall": 0.006644518272425249,
+        "no_imu_person_err_m": 1.9395305360305661
+      },
+      "coop": {
+        "success": true,
+        "time_s": 45.8,
+        "distance_m": 15.92,
+        "replans": 8,
+        "collisions": 0,
+        "person_err_m": 0.26906411930822505
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 45.4,
+        "distance_m": 15.79,
+        "replans": 18,
+        "collisions": 0,
+        "person_err_m": 0.2506559217282241
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 271.2,
+        "distance_m": 93.9,
+        "replans": 52,
+        "collisions": 0,
+        "person_err_m": 0.25029265520954963
+      }
+    },
+    {
+      "seed": 107,
+      "map": {
+        "obstacle_recall": 0.12087912087912088,
+        "obstacle_precision": 0.2570093457943925,
+        "obstacle_coverage_inflated": 0.23516483516483516,
+        "aerial_person_err_m": 0.5659717658266628,
+        "map_build_ms": 1.7107680000663095,
+        "no_imu_obstacle_recall": 0.2152777777777778,
+        "no_imu_person_err_m": 0.4654214137197552
+      },
+      "coop": {
+        "success": true,
+        "time_s": 48.7,
+        "distance_m": 17.0,
+        "replans": 9,
+        "collisions": 0,
+        "person_err_m": 0.25471116930209703
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 48.5,
+        "distance_m": 16.93,
+        "replans": 8,
+        "collisions": 0,
+        "person_err_m": 0.24997083319404767
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 270.2,
+        "distance_m": 93.57,
+        "replans": 29,
+        "collisions": 0,
+        "person_err_m": 0.25055796455697577
+      }
+    },
+    {
+      "seed": 108,
+      "map": {
+        "obstacle_recall": 0.2783882783882784,
+        "obstacle_precision": 0.38190954773869346,
+        "obstacle_coverage_inflated": 0.3956043956043956,
+        "aerial_person_err_m": 0.2200532819243465,
+        "map_build_ms": 1.8295689999376918,
+        "no_imu_obstacle_recall": 0.12087912087912088,
+        "no_imu_person_err_m": 0.8270001692897009
+      },
+      "coop": {
+        "success": true,
+        "time_s": 52.1,
+        "distance_m": 18.22,
+        "replans": 9,
+        "collisions": 0,
+        "person_err_m": 0.8500225436559846
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 53.2,
+        "distance_m": 18.59,
+        "replans": 7,
+        "collisions": 0,
+        "person_err_m": 0.8499974812933068
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 288.4,
+        "distance_m": 98.98,
+        "replans": 43,
+        "collisions": 0,
+        "person_err_m": 0.9061841506353098
+      }
+    },
+    {
+      "seed": 109,
+      "map": {
+        "obstacle_recall": 0.07317073170731707,
+        "obstacle_precision": 0.32231404958677684,
+        "obstacle_coverage_inflated": 0.14071294559099437,
+        "aerial_person_err_m": 0.2910764459102388,
+        "map_build_ms": 1.7796859999634762,
+        "no_imu_obstacle_recall": 0.02247191011235955,
+        "no_imu_person_err_m": 1.0182856651522467
+      },
+      "coop": {
+        "success": true,
+        "time_s": 53.7,
+        "distance_m": 18.76,
+        "replans": 19,
+        "collisions": 0,
+        "person_err_m": 0.24536272859149494
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 54.3,
+        "distance_m": 18.93,
+        "replans": 18,
+        "collisions": 0,
+        "person_err_m": 0.25319333408219064
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 261.9,
+        "distance_m": 87.01,
+        "replans": 64,
+        "collisions": 0,
+        "person_err_m": 0.2498708839669438
+      }
+    },
+    {
+      "seed": 110,
+      "map": {
+        "obstacle_recall": 0.3091286307053942,
+        "obstacle_precision": 0.41388888888888886,
+        "obstacle_coverage_inflated": 0.4170124481327801,
+        "aerial_person_err_m": 0.4881863799477226,
+        "map_build_ms": 1.9031409999570315,
+        "no_imu_obstacle_recall": 0.12633832976445397,
+        "no_imu_person_err_m": 1.074159326042057
+      },
+      "coop": {
+        "success": true,
+        "time_s": 53.6,
+        "distance_m": 18.75,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": 0.850000803019074
+      },
+      "ground_known": {
+        "success": false,
+        "time_s": 300.1,
+        "distance_m": 87.25,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": null
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 275.6,
+        "distance_m": 93.91,
+        "replans": 37,
+        "collisions": 0,
+        "person_err_m": 0.8613311928901768
+      }
+    },
+    {
+      "seed": 111,
+      "map": {
+        "obstacle_recall": 0.23107569721115537,
+        "obstacle_precision": 0.40559440559440557,
+        "obstacle_coverage_inflated": 0.3107569721115538,
+        "aerial_person_err_m": 0.13990012107961827,
+        "map_build_ms": 2.096777999895494,
+        "no_imu_obstacle_recall": 0.06976744186046512,
+        "no_imu_person_err_m": 1.494040649062446
+      },
+      "coop": {
+        "success": true,
+        "time_s": 55.4,
+        "distance_m": 19.32,
+        "replans": 6,
+        "collisions": 0,
+        "person_err_m": 0.2501448455058714
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 54.0,
+        "distance_m": 18.86,
+        "replans": 6,
+        "collisions": 0,
+        "person_err_m": 0.24840975380663266
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 352.7,
+        "distance_m": 121.98,
+        "replans": 61,
+        "collisions": 0,
+        "person_err_m": 0.2555521534096061
+      }
+    },
+    {
+      "seed": 112,
+      "map": {
+        "obstacle_recall": 0.30265848670756645,
+        "obstacle_precision": 0.4668769716088328,
+        "obstacle_coverage_inflated": 0.41922290388548056,
+        "aerial_person_err_m": 0.2345997850543931,
+        "map_build_ms": 2.1932130000550387,
+        "no_imu_obstacle_recall": 0.050387596899224806,
+        "no_imu_person_err_m": 1.3593345721535781
+      },
+      "coop": {
+        "success": true,
+        "time_s": 47.7,
+        "distance_m": 16.65,
+        "replans": 7,
+        "collisions": 0,
+        "person_err_m": 0.2502373829754619
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 47.5,
+        "distance_m": 16.58,
+        "replans": 10,
+        "collisions": 0,
+        "person_err_m": 0.25079209416898934
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 323.7,
+        "distance_m": 111.79,
+        "replans": 36,
+        "collisions": 0,
+        "person_err_m": 0.2545636237308815
+      }
+    },
+    {
+      "seed": 113,
+      "map": {
+        "obstacle_recall": 0.13610586011342155,
+        "obstacle_precision": 0.4044943820224719,
+        "obstacle_coverage_inflated": 0.2948960302457467,
+        "aerial_person_err_m": 0.6352775654835141,
+        "map_build_ms": 1.7081179998967855,
+        "no_imu_obstacle_recall": 0.022684310018903593,
+        "no_imu_person_err_m": 1.4884589213658386
+      },
+      "coop": {
+        "success": true,
+        "time_s": 47.7,
+        "distance_m": 16.64,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": 0.24978383615830854
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 51.4,
+        "distance_m": 17.74,
+        "replans": 25,
+        "collisions": 0,
+        "person_err_m": 0.2545518876868601
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 188.9,
+        "distance_m": 65.47,
+        "replans": 27,
+        "collisions": 0,
+        "person_err_m": 0.24972131975519304
+      }
+    },
+    {
+      "seed": 114,
+      "map": {
+        "obstacle_recall": 0.1179245283018868,
+        "obstacle_precision": 0.45871559633027525,
+        "obstacle_coverage_inflated": 0.1957547169811321,
+        "aerial_person_err_m": 0.420968504703033,
+        "map_build_ms": 1.936054999987391,
+        "no_imu_obstacle_recall": 0.0,
+        "no_imu_person_err_m": 1.3174563902651446
+      },
+      "coop": {
+        "success": true,
+        "time_s": 44.6,
+        "distance_m": 15.59,
+        "replans": 6,
+        "collisions": 0,
+        "person_err_m": 0.8519691910720428
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 44.6,
+        "distance_m": 15.59,
+        "replans": 4,
+        "collisions": 0,
+        "person_err_m": 0.857686947563088
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 276.1,
+        "distance_m": 95.33,
+        "replans": 21,
+        "collisions": 0,
+        "person_err_m": 0.8620849765801232
+      }
+    },
+    {
+      "seed": 115,
+      "map": {
+        "obstacle_recall": 0.10516252390057361,
+        "obstacle_precision": 0.3503184713375796,
+        "obstacle_coverage_inflated": 0.14149139579349904,
+        "aerial_person_err_m": 0.1531318734427844,
+        "map_build_ms": 1.0443799999393377,
+        "no_imu_obstacle_recall": 0.06477732793522267,
+        "no_imu_person_err_m": 0.806164947513753
+      },
+      "coop": {
+        "success": true,
+        "time_s": 48.7,
+        "distance_m": 17.01,
+        "replans": 11,
+        "collisions": 0,
+        "person_err_m": 0.9033733900166704
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 48.7,
+        "distance_m": 17.01,
+        "replans": 13,
+        "collisions": 0,
+        "person_err_m": 0.927489151134139
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 163.7,
+        "distance_m": 56.58,
+        "replans": 26,
+        "collisions": 0,
+        "person_err_m": 0.8512328029303439
+      }
+    },
+    {
+      "seed": 116,
+      "map": {
+        "obstacle_recall": 0.23790322580645162,
+        "obstacle_precision": 0.3064935064935065,
+        "obstacle_coverage_inflated": 0.3850806451612903,
+        "aerial_person_err_m": 0.29136523946992643,
+        "map_build_ms": 1.988546999882601,
+        "no_imu_obstacle_recall": 0.038461538461538464,
+        "no_imu_person_err_m": 1.4421013919167338
+      },
+      "coop": {
+        "success": true,
+        "time_s": 45.2,
+        "distance_m": 15.81,
+        "replans": 3,
+        "collisions": 0,
+        "person_err_m": 0.2489640353189547
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 46.3,
+        "distance_m": 16.14,
+        "replans": 8,
+        "collisions": 0,
+        "person_err_m": 0.2499284117880017
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 258.4,
+        "distance_m": 89.68,
+        "replans": 43,
+        "collisions": 0,
+        "person_err_m": 0.24753896141547124
+      }
+    },
+    {
+      "seed": 117,
+      "map": {
+        "obstacle_recall": 0.212,
+        "obstacle_precision": 0.3002832861189802,
+        "obstacle_coverage_inflated": 0.34,
+        "aerial_person_err_m": 0.22460191523693399,
+        "map_build_ms": 1.7428870000912866,
+        "no_imu_obstacle_recall": 0.0645879732739421,
+        "no_imu_person_err_m": 1.4171551656401309
+      },
+      "coop": {
+        "success": true,
+        "time_s": 53.0,
+        "distance_m": 18.51,
+        "replans": 10,
+        "collisions": 0,
+        "person_err_m": 0.8995098412099102
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 54.2,
+        "distance_m": 18.81,
+        "replans": 12,
+        "collisions": 0,
+        "person_err_m": 0.9082766881008993
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 292.1,
+        "distance_m": 101.13,
+        "replans": 126,
+        "collisions": 0,
+        "person_err_m": 0.8508266235504581
+      }
+    },
+    {
+      "seed": 118,
+      "map": {
+        "obstacle_recall": 0.206,
+        "obstacle_precision": 0.3130699088145897,
+        "obstacle_coverage_inflated": 0.396,
+        "aerial_person_err_m": 0.46211411993257395,
+        "map_build_ms": 2.0333160000518546,
+        "no_imu_obstacle_recall": 0.023121387283236993,
+        "no_imu_person_err_m": 1.7943511212224332
+      },
+      "coop": {
+        "success": true,
+        "time_s": 56.4,
+        "distance_m": 19.69,
+        "replans": 22,
+        "collisions": 0,
+        "person_err_m": 0.24984522168764395
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 57.9,
+        "distance_m": 20.12,
+        "replans": 19,
+        "collisions": 0,
+        "person_err_m": 0.24654431243923153
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 292.5,
+        "distance_m": 100.66,
+        "replans": 91,
+        "collisions": 0,
+        "person_err_m": 0.2531476294640691
+      }
+    },
+    {
+      "seed": 119,
+      "map": {
+        "obstacle_recall": 0.2635135135135135,
+        "obstacle_precision": 0.6290322580645161,
+        "obstacle_coverage_inflated": 0.35585585585585583,
+        "aerial_person_err_m": 0.19782449959886006,
+        "map_build_ms": 1.8988570000146865,
+        "no_imu_obstacle_recall": 0.013729977116704805,
+        "no_imu_person_err_m": 1.5456112978199976
+      },
+      "coop": {
+        "success": true,
+        "time_s": 45.9,
+        "distance_m": 15.89,
+        "replans": 17,
+        "collisions": 0,
+        "person_err_m": 0.8570695912326578
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 45.8,
+        "distance_m": 15.85,
+        "replans": 17,
+        "collisions": 0,
+        "person_err_m": 0.8553945552653349
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 171.5,
+        "distance_m": 59.14,
+        "replans": 19,
+        "collisions": 0,
+        "person_err_m": 0.8622922731342877
+      }
+    },
+    {
+      "seed": 120,
+      "map": {
+        "obstacle_recall": 0.09156626506024096,
+        "obstacle_precision": 0.3838383838383838,
+        "obstacle_coverage_inflated": 0.18072289156626506,
+        "aerial_person_err_m": 0.4227185940339523,
+        "map_build_ms": 1.1213980001230084,
+        "no_imu_obstacle_recall": 0.004784688995215311,
+        "no_imu_person_err_m": 1.5382334719581356
+      },
+      "coop": {
+        "success": true,
+        "time_s": 42.3,
+        "distance_m": 14.78,
+        "replans": 19,
+        "collisions": 0,
+        "person_err_m": 0.8675860324104429
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 42.7,
+        "distance_m": 14.93,
+        "replans": 4,
+        "collisions": 0,
+        "person_err_m": 0.9100612349547474
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 279.0,
+        "distance_m": 96.79,
+        "replans": 61,
+        "collisions": 0,
+        "person_err_m": 0.8499448973314883
+      }
+    },
+    {
+      "seed": 121,
+      "map": {
+        "obstacle_recall": 0.07829181494661921,
+        "obstacle_precision": 0.2430939226519337,
+        "obstacle_coverage_inflated": 0.21352313167259787,
+        "aerial_person_err_m": 0.40233733266731314,
+        "map_build_ms": 1.2775269999565353,
+        "no_imu_obstacle_recall": 0.051418439716312055,
+        "no_imu_person_err_m": 0.6473343619774901
+      },
+      "coop": {
+        "success": true,
+        "time_s": 46.9,
+        "distance_m": 16.32,
+        "replans": 17,
+        "collisions": 0,
+        "person_err_m": 0.8109450553574044
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 47.6,
+        "distance_m": 16.55,
+        "replans": 17,
+        "collisions": 0,
+        "person_err_m": 0.8236641032717221
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 271.4,
+        "distance_m": 93.67,
+        "replans": 36,
+        "collisions": 0,
+        "person_err_m": 0.9460610509223101
+      }
+    },
+    {
+      "seed": 122,
+      "map": {
+        "obstacle_recall": 0.189453125,
+        "obstacle_precision": 0.40585774058577406,
+        "obstacle_coverage_inflated": 0.29296875,
+        "aerial_person_err_m": 0.26646057116436733,
+        "map_build_ms": 2.5664229999620147,
+        "no_imu_obstacle_recall": 0.08610567514677103,
+        "no_imu_person_err_m": 1.2700504453798143
+      },
+      "coop": {
+        "success": true,
+        "time_s": 42.1,
+        "distance_m": 14.67,
+        "replans": 6,
+        "collisions": 0,
+        "person_err_m": 0.8543602698470132
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 41.3,
+        "distance_m": 14.41,
+        "replans": 8,
+        "collisions": 0,
+        "person_err_m": 0.8782740859589839
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 298.8,
+        "distance_m": 103.54,
+        "replans": 43,
+        "collisions": 0,
+        "person_err_m": 0.8515149844559499
+      }
+    },
+    {
+      "seed": 123,
+      "map": {
+        "obstacle_recall": 0.08249496981891348,
+        "obstacle_precision": 0.41414141414141414,
+        "obstacle_coverage_inflated": 0.10865191146881288,
+        "aerial_person_err_m": 0.37226799372036395,
+        "map_build_ms": 1.1760299998968549,
+        "no_imu_obstacle_recall": 0.018975332068311195,
+        "no_imu_person_err_m": 1.3837398198575737
+      },
+      "coop": {
+        "success": true,
+        "time_s": 47.8,
+        "distance_m": 16.65,
+        "replans": 5,
+        "collisions": 0,
+        "person_err_m": 0.8499620875959879
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 47.8,
+        "distance_m": 16.65,
+        "replans": 6,
+        "collisions": 0,
+        "person_err_m": 0.8500802343083742
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 331.6,
+        "distance_m": 114.37,
+        "replans": 70,
+        "collisions": 0,
+        "person_err_m": 0.8500455296381472
+      }
+    },
+    {
+      "seed": 124,
+      "map": {
+        "obstacle_recall": 0.1154639175257732,
+        "obstacle_precision": 0.26046511627906976,
+        "obstacle_coverage_inflated": 0.20824742268041238,
+        "aerial_person_err_m": 0.5747528403895475,
+        "map_build_ms": 1.9896219998827291,
+        "no_imu_obstacle_recall": 0.04365079365079365,
+        "no_imu_person_err_m": 1.0402634223041565
+      },
+      "coop": {
+        "success": true,
+        "time_s": 56.4,
+        "distance_m": 19.71,
+        "replans": 10,
+        "collisions": 0,
+        "person_err_m": 0.8611822119988839
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 83.8,
+        "distance_m": 29.17,
+        "replans": 38,
+        "collisions": 0,
+        "person_err_m": 0.8500014378154809
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 254.5,
+        "distance_m": 88.43,
+        "replans": 52,
+        "collisions": 0,
+        "person_err_m": 0.8807843135459051
+      }
+    },
+    {
+      "seed": 125,
+      "map": {
+        "obstacle_recall": 0.23529411764705882,
+        "obstacle_precision": 0.4444444444444444,
+        "obstacle_coverage_inflated": 0.32679738562091504,
+        "aerial_person_err_m": 0.3065867473463404,
+        "map_build_ms": 1.7819280001276638,
+        "no_imu_obstacle_recall": 0.08779443254817987,
+        "no_imu_person_err_m": 1.0813857279113779
+      },
+      "coop": {
+        "success": true,
+        "time_s": 52.5,
+        "distance_m": 18.28,
+        "replans": 13,
+        "collisions": 0,
+        "person_err_m": 0.2464272629787634
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 52.8,
+        "distance_m": 18.4,
+        "replans": 9,
+        "collisions": 0,
+        "person_err_m": 0.24817308609107966
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 306.9,
+        "distance_m": 106.21,
+        "replans": 109,
+        "collisions": 0,
+        "person_err_m": 0.2501025908202006
+      }
+    },
+    {
+      "seed": 126,
+      "map": {
+        "obstacle_recall": 0.16885964912280702,
+        "obstacle_precision": 0.22580645161290322,
+        "obstacle_coverage_inflated": 0.3399122807017544,
+        "aerial_person_err_m": 0.6674472523392833,
+        "map_build_ms": 2.3326189998442715,
+        "no_imu_obstacle_recall": 0.0407725321888412,
+        "no_imu_person_err_m": 1.8173635046423948
+      },
+      "coop": {
+        "success": true,
+        "time_s": 60.5,
+        "distance_m": 20.99,
+        "replans": 14,
+        "collisions": 0,
+        "person_err_m": 0.2508003616810563
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 60.5,
+        "distance_m": 21.01,
+        "replans": 13,
+        "collisions": 0,
+        "person_err_m": 0.25009081503866964
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 339.0,
+        "distance_m": 117.47,
+        "replans": 34,
+        "collisions": 0,
+        "person_err_m": 0.24907645601829578
+      }
+    },
+    {
+      "seed": 127,
+      "map": {
+        "obstacle_recall": 0.1410488245931284,
+        "obstacle_precision": 0.291044776119403,
+        "obstacle_coverage_inflated": 0.23688969258589512,
+        "aerial_person_err_m": 0.42170259639236174,
+        "map_build_ms": 1.6773740001099213,
+        "no_imu_obstacle_recall": 0.015901060070671377,
+        "no_imu_person_err_m": 1.6932756279090475
+      },
+      "coop": {
+        "success": true,
+        "time_s": 64.4,
+        "distance_m": 22.49,
+        "replans": 15,
+        "collisions": 0,
+        "person_err_m": 0.250020698956557
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 60.3,
+        "distance_m": 20.92,
+        "replans": 20,
+        "collisions": 0,
+        "person_err_m": 0.24435130741402145
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 326.1,
+        "distance_m": 112.75,
+        "replans": 30,
+        "collisions": 0,
+        "person_err_m": 0.25342815125465123
+      }
+    },
+    {
+      "seed": 128,
+      "map": {
+        "obstacle_recall": 0.17343173431734318,
+        "obstacle_precision": 0.35074626865671643,
+        "obstacle_coverage_inflated": 0.2656826568265683,
+        "aerial_person_err_m": 0.42188235690805226,
+        "map_build_ms": 1.3187510000989278,
+        "no_imu_obstacle_recall": 0.1797752808988764,
+        "no_imu_person_err_m": 0.5125785630609084
+      },
+      "coop": {
+        "success": true,
+        "time_s": 55.3,
+        "distance_m": 19.31,
+        "replans": 24,
+        "collisions": 0,
+        "person_err_m": 0.8506041038190745
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 55.4,
+        "distance_m": 19.35,
+        "replans": 26,
+        "collisions": 0,
+        "person_err_m": 0.849645723296836
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 293.1,
+        "distance_m": 101.36,
+        "replans": 80,
+        "collisions": 0,
+        "person_err_m": 0.8509312320788635
+      }
+    },
+    {
+      "seed": 129,
+      "map": {
+        "obstacle_recall": 0.1506276150627615,
+        "obstacle_precision": 0.37894736842105264,
+        "obstacle_coverage_inflated": 0.16527196652719664,
+        "aerial_person_err_m": 0.07058714283488997,
+        "map_build_ms": 0.7731099999546132,
+        "no_imu_obstacle_recall": 0.10874200426439233,
+        "no_imu_person_err_m": 0.7316434378355902
+      },
+      "coop": {
+        "success": true,
+        "time_s": 54.1,
+        "distance_m": 18.84,
+        "replans": 22,
+        "collisions": 0,
+        "person_err_m": 0.28680997668253627
+      },
+      "ground_known": {
+        "success": true,
+        "time_s": 54.1,
+        "distance_m": 18.84,
+        "replans": 22,
+        "collisions": 0,
+        "person_err_m": 0.28680997668253627
+      },
+      "ground_search": {
+        "success": true,
+        "time_s": 315.1,
+        "distance_m": 109.21,
+        "replans": 38,
+        "collisions": 0,
+        "person_err_m": 0.35394259529927197
+      }
+    }
+  ]
+}
