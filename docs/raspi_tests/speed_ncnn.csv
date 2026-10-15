@@ -1,0 +1,2 @@
+model,imgsz,fps,p50_ms,p95_ms,cpu_temp_c
+best_person_ncnn_model,320,15.88,63.0,64.8,63.9
