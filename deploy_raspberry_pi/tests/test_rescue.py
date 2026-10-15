@@ -369,3 +369,71 @@ def test_car_node_dry_run_plans_and_reaches_goal(monkeypatch, capsys):
     car_node.main()
     out = capsys.readouterr().out
     assert "[规划·新地图]" in out and "到达终点" in out
+
+
+# ---------------- baro（BMP388）与位姿节点 ----------------
+
+class _FakeI2C:
+    """模拟 BMP388 寄存器：芯片 ID、21 字节校准数据、6 字节测量数据"""
+
+    def __init__(self, calib: bytes, data: bytes):
+        self.calib, self.data, self.writes = calib, data, {}
+
+    def read_byte_data(self, addr, reg):
+        return 0x50
+
+    def write_byte_data(self, addr, reg, value):
+        self.writes[reg] = value
+
+    def read_i2c_block_data(self, addr, reg, n):
+        src = self.calib if reg == 0x31 else self.data
+        return list(src[:n])
+
+
+def _calib_bytes(t1=27500, t2=18800, t3=-7, p1=-1100, p2=-3000, p3=35, p4=0, p5=25000,
+                 p6=30000, p7=3, p8=-7, p9=16000, p10=14, p11=-60):
+    import struct
+    return struct.pack("<HHbhhbbHHbbhbb", t1, t2, t3, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)
+
+
+def test_bmp388_calibration_scaling_and_data_byte_order():
+    from rescue.baro import parse_calibration, unpack_data
+    c = parse_calibration(_calib_bytes(t1=1, t2=1, p1=2 ** 14, p5=1))
+    assert c.t1 == 256 and c.t2 == 2.0 ** -30 and c.p1 == 0.0 and c.p5 == 8.0
+    assert unpack_data(bytes([0x01, 0x02, 0x03, 0x0A, 0x0B, 0x0C])) == (0x030201, 0x0C0B0A)
+
+
+def test_bmp388_driver_configures_and_reads_plausible_values():
+    from rescue.baro import BMP388, compensate, parse_calibration, unpack_data
+    data = bytes([0x00, 0x80, 0x6B, 0x00, 0x40, 0x7E])
+    bus = _FakeI2C(_calib_bytes(), data)
+    sensor = BMP388(smbus=bus)
+    assert bus.writes[0x1B] == 0x33 and bus.writes[0x1C] == 0x03 and bus.writes[0x1D] == 0x02
+    p, t = sensor.read()
+    assert (p, t) == compensate(*unpack_data(data), parse_calibration(_calib_bytes()))
+    assert 0 < t < 40          # 典型校准参数下温度落在室温附近
+
+
+def test_relative_altimeter_converts_pressure_drop_to_height():
+    from rescue.baro import RelativeAltimeter
+
+    class Sensor:
+        def __init__(self):
+            self.p = 1013.25
+
+        def read(self):
+            return self.p, 15.0
+
+    s = Sensor()
+    alt = RelativeAltimeter(s, samples=5, interval_s=0.0)
+    s.p = 1013.25 * math.exp(-10.0 / (29.271 * 288.15))   # 10 m 处的等温气压
+    h, _, _ = alt.altitude()
+    assert h == pytest.approx(10.0, abs=1e-6)
+
+
+def test_quaternion_to_rpy_matches_single_axis_rotations():
+    from pose_publisher import quaternion_to_rpy_deg
+    a = math.radians(10) / 2
+    assert quaternion_to_rpy_deg(math.sin(a), 0, 0, math.cos(a)) == pytest.approx((10, 0, 0), abs=1e-9)
+    b = math.radians(20) / 2
+    assert quaternion_to_rpy_deg(0, math.sin(b), 0, math.cos(b)) == pytest.approx((0, 20, 0), abs=1e-9)

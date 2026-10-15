@@ -21,5 +21,6 @@ pyyaml>=6.0
 # 空地协同系统（rescue 包）
 paho-mqtt>=1.6          # 空地 MQTT 通信（另需 sudo apt install mosquitto mosquitto-clients）
 rplidar-roboticia>=0.9  # RPLIDAR 激光雷达驱动（car_node.py --lidar）
+smbus2>=0.4             # BMP388 气压计 I2C 读取（pose_publisher.py --bmp388，需在 raspi-config 中启用 I2C）
 pytest>=7.0             # 单元测试
 # gpiozero 由树莓派系统自带（python3-gpiozero），venv 通过 --system-site-packages 可见

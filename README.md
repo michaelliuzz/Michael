@@ -19,6 +19,7 @@
 | `rescue/comm.py` | 空地通信 | MQTT 传输压缩栅格地图与人员坐标 |
 | `rescue/sim.py` | 系统验证 | 无硬件条件下的空地协同全流程仿真与对比实验 |
 | `drone_node.py` / `car_node.py` | 系统集成 | 空中端 / 地面端节点程序 |
+| `rescue/baro.py` + `pose_publisher.py` | 研究内容(3) | BMP388 气压计读取与相对测高；IMU（ROS 2 `sensor_msgs/Imu`）姿态桥接；发布 `rescue/pose` 供 `drone_node.py --pose-topic` 使用 |
 | `benchmark.py` | 难点(1) | ONNX/NCNN 导出、INT8 量化、FPS 对比、3 小时稳定性测试 |
 
 ```bash
@@ -28,6 +29,7 @@ python3 -m rescue.sim --seed 1 --figure sim.png                   # 单次仿真
 python3 -m rescue.sim --trials 30 --seed 100 --json results.json  # 蒙特卡洛对比实验
 python3 drone_node.py --model best_collapsed.pt --source test.jpg --altitude 25 --once
 python3 car_node.py --mqtt localhost --dry-run
+python3 pose_publisher.py --bmp388 --print                        # 气压计相对测高（需启用 I2C）
 ```
 
 ---

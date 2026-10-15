@@ -36,6 +36,7 @@ The algorithms live in the `deploy_raspberry_pi/rescue/` package (numpy-only exc
 | `deploy_raspberry_pi/rescue/comm.py` | MQTT (paho 1.x/2.x) + loopback link; compressed grid-map messages |
 | `deploy_raspberry_pi/rescue/sim.py` | Full air-ground simulation and Monte Carlo comparison |
 | `deploy_raspberry_pi/drone_node.py` / `car_node.py` | Air-side and ground-side entry points; `car_node` also runs lidar map correction + replanning and optional car-camera person detection (`--person-model`) |
+| `deploy_raspberry_pi/rescue/baro.py` / `pose_publisher.py` | BMP388 I2C driver (Bosch float compensation) + relative altimeter; pose node publishing `{altitude, pitch, roll, yaw}` to MQTT `rescue/pose` (IMU attitude from a ROS 2 `sensor_msgs/Imu` topic) for `drone_node.py --pose-topic` |
 | `deploy_raspberry_pi/benchmark.py` | ONNX/NCNN export, INT8, FPS comparison, long-run soak test |
 
 ## Setup (Raspberry Pi)
