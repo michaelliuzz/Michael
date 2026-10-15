@@ -433,7 +433,7 @@ def plot_mission(scene, dets, aerial, results, out_path):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon, Rectangle
 
-    plt.rcParams["font.sans-serif"] = ["Noto Sans CJK SC", "WenQuanYi Zen Hei", "SimHei",
+    plt.rcParams["font.sans-serif"] = ["Noto Sans SC", "Noto Sans CJK SC", "WenQuanYi Zen Hei", "SimHei",
                                        "Microsoft YaHei", "DejaVu Sans"]
     plt.rcParams["axes.unicode_minus"] = False
     colors = {"debris": "#8c6d46", "stone": "#7f7f7f", "wood": "#4f7f3a", "person": "#d62728"}
@@ -452,7 +452,7 @@ def plot_mission(scene, dets, aerial, results, out_path):
     ax.set_xlim(0, scene.cam.width)
     ax.set_ylim(scene.cam.height, 0)
     ax.set_aspect("equal")
-    ax.set_title("(a) 无人机航拍视角与 YOLO 检测框（模拟）\n半透明 = 空中不可见障碍")
+    ax.set_title("(a) 无人机视角与检测框（半透明为空中不可见障碍）", fontsize=10.5)
 
     # (b) 航拍栅格地图 + 初始 A* 路径
     gm = aerial.gridmap
@@ -468,7 +468,7 @@ def plot_mission(scene, dets, aerial, results, out_path):
     for px, py, _ in aerial.persons_xy:
         ax.plot(px, py, "r*", ms=14, label="航拍人员坐标")
     ax.plot(*scene.start_pose[:2], "gs", ms=9, label="小车起点")
-    ax.set_title(f"(b) GSD 投影栅格地图（{gm.resolution} m/格，深色=障碍，浅色=膨胀区）")
+    ax.set_title(f"(b) 栅格地图与 A* 初始路径（{gm.resolution} m/格）", fontsize=10.5)
     ax.legend(loc="lower right", fontsize=8)
 
     # (c) 真实环境中的实际轨迹
@@ -489,7 +489,7 @@ def plot_mission(scene, dets, aerial, results, out_path):
                 label=f"{name}: {'成功' if r.success else '失败'} {r.time_s:.0f}s {r.distance_m:.1f}m")
     ax.plot(*scene.person_xy, "r*", ms=14, label="受困人员（真实）")
     ax.plot(*scene.start_pose[:2], "gs", ms=9)
-    ax.set_title("(c) 真实场景中的小车轨迹（橙框 = 仅雷达可见障碍）")
+    ax.set_title("(c) 三种策略的行驶轨迹（橙框为仅雷达可见障碍）", fontsize=10.5)
     ax.legend(loc="lower right", fontsize=8)
     for ax in axes[1:]:
         ax.set_xlabel("x / m")
