@@ -8,10 +8,12 @@
     local_map      研究内容(1)(3) 地面雷达修正航拍地图（补漏检障碍、清除假障碍）、路径受阻判断
     control        预期成果     小车沿期望航向行驶的控制代码（PID + 差速驱动）
     person_locate  研究内容(4)  基于相机内参与安装高度估计人体距离与方位，多帧确认防误检
+    baro           研究内容(3)  BMP388 气压计读取与相对测高（飞行高度 H）
     comm           空地通信     MQTT 栅格地图 / 目标信息收发
     sim            系统验证     无硬件条件下的空地协同全流程仿真
+    viz            系统验证     各模块可视化与搜救过程动画（需 matplotlib）
 
-除 comm（paho-mqtt）外，算法模块只依赖 numpy，可在树莓派与普通电脑上直接运行与测试。
+除 comm（paho-mqtt）、baro（smbus2）与 viz（matplotlib）外，算法模块只依赖 numpy，可在树莓派与普通电脑上直接运行与测试。
 """
 
 __version__ = "1.0.0"

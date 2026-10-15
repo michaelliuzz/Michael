@@ -275,8 +275,9 @@ def lawnmower_goals(gm: GridMap, start_xy, spacing=5.0, margin=1.5):
 
 
 def run_mission(scene: Scene, policy: str, rng, aerial=None, max_time=None, dt=0.1,
-                inflate_m=0.3) -> MissionResult:
+                inflate_m=0.3, on_step=None) -> MissionResult:
     """
+    on_step: 可选回调，每个仿真步调用一次，参数为当前状态字典（供 rescue.viz 录制动画）
     policy:
         "coop"         空地协同：航拍栅格地图 + 航拍人员坐标作为终点
         "ground_known" 仅地面（理想化对照）：空白地图，只靠雷达逐步建图，但假设已知人员真实坐标
@@ -352,6 +353,10 @@ def run_mission(scene: Scene, policy: str, rng, aerial=None, max_time=None, dt=0
         pose = [nx, ny, nth]
         traj.append(tuple(pose))
         t += dt
+        if on_step is not None:
+            on_step({"t": t, "pose": tuple(pose), "rel": rel, "ranges": ranges, "local": local,
+                     "v": v, "w": w, "target": target, "path": follower.path, "map": gm,
+                     "fixes": len(fixes), "homing": homing})
 
         # 车载相机人员检测与定位（模型召回率按 0.9 计，需视线无遮挡）
         bb = project_person_to_car_camera(scene, pose, car_cam)
@@ -504,7 +509,8 @@ def plot_mission(scene, dets, aerial, results, out_path):
 POLICIES = ("coop", "ground_known", "ground_search")
 
 
-def run_trial(seed: int, trap=True, figure=None):
+def prepare_trial(seed: int, trap=True):
+    """生成可解场景、模拟航拍检测并建图，返回 (scene, dets, aerial, 建图耗时 ms)"""
     rng = np.random.default_rng(seed)
     for _ in range(20):
         scene = random_scene(rng, trap=trap)
@@ -514,7 +520,11 @@ def run_trial(seed: int, trap=True, figure=None):
     t0 = time.perf_counter()
     aerial = build_grid_map(dets, scene.cam, scene.measured_pose, resolution=0.25,
                             inflate_radius_m=0.3)
-    map_ms = (time.perf_counter() - t0) * 1000
+    return scene, dets, aerial, (time.perf_counter() - t0) * 1000
+
+
+def run_trial(seed: int, trap=True, figure=None):
+    scene, dets, aerial, map_ms = prepare_trial(seed, trap)
     results = [run_mission(scene, p, np.random.default_rng(seed + 1000), aerial)
                for p in POLICIES]
     if figure:

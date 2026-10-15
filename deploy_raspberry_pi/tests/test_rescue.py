@@ -437,3 +437,32 @@ def test_quaternion_to_rpy_matches_single_axis_rotations():
     assert quaternion_to_rpy_deg(math.sin(a), 0, 0, math.cos(a)) == pytest.approx((10, 0, 0), abs=1e-9)
     b = math.radians(20) / 2
     assert quaternion_to_rpy_deg(0, math.sin(b), 0, math.cos(b)) == pytest.approx((0, 20, 0), abs=1e-9)
+
+
+# ---------------- 仿真录制与可视化 ----------------
+
+def test_run_mission_on_step_reports_every_step():
+    from rescue.sim import prepare_trial, run_mission
+    scene, _, aerial, _ = prepare_trial(1)
+    steps = []
+    res = run_mission(scene, "coop", np.random.default_rng(1001), aerial, on_step=steps.append)
+    assert len(steps) == len(res.trajectory) - 1
+    assert steps[-1]["pose"] == res.trajectory[-1] and steps[-1]["map"] is res.final_map
+
+
+def test_gap_demo_scene_turns_away_from_blocked_target():
+    from rescue.viz import gap_demo_scan
+    cfg = GapConfig(car_width=0.25, margin=0.08)
+    lp = plan_local(*gap_demo_scan(1), 0.0, cfg)
+    passable = [g for g in lp.gaps if g.passable]
+    assert lp.heading_deg is not None and lp.heading_deg < -10      # 正前方被挡，转向右侧缝隙
+    assert any(g.start_deg <= lp.heading_deg <= g.end_deg for g in passable)
+    assert any(not g.passable for g in lp.gaps)                       # 场景中包含过窄缝隙
+
+
+def test_viz_static_figures_render(tmp_path):
+    pytest.importorskip("matplotlib")
+    from rescue import viz
+    for fn in (viz.fig_gap, viz.fig_person, viz.fig_comm, viz.fig_baro):
+        fn(1, tmp_path)
+    assert len(list(tmp_path.glob("viz_*.png"))) == 4

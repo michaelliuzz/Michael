@@ -18,6 +18,7 @@
 | `rescue/person_locate.py` | 研究内容(4) | 由相机内参与安装高度估计人体距离与方位；多帧确认防误检 |
 | `rescue/comm.py` | 空地通信 | MQTT 传输压缩栅格地图与人员坐标 |
 | `rescue/sim.py` | 系统验证 | 无硬件条件下的空地协同全流程仿真与对比实验 |
+| `rescue/viz.py` | 系统验证 | 各功能模块可视化（建图、A*、缝隙检测、人员定位、控制、通信、测高）与搜救过程动画 |
 | `drone_node.py` / `car_node.py` | 系统集成 | 空中端 / 地面端节点程序 |
 | `rescue/baro.py` + `pose_publisher.py` | 研究内容(3) | BMP388 气压计读取与相对测高；IMU（ROS 2 `sensor_msgs/Imu`）姿态桥接；发布 `rescue/pose` 供 `drone_node.py --pose-topic` 使用 |
 | `benchmark.py` | 难点(1) | ONNX/NCNN 导出、INT8 量化、FPS 对比、3 小时稳定性测试 |
@@ -31,6 +32,18 @@ python3 drone_node.py --model best_collapsed.pt --source test.jpg --altitude 25 
 python3 car_node.py --mqtt localhost --dry-run
 python3 pose_publisher.py --bmp388 --print                        # 气压计相对测高（需启用 I2C）
 ```
+
+### 可视化与演示动画（需 matplotlib；mp4 需 ffmpeg，gif 只需 pillow）
+
+```bash
+cd deploy_raspberry_pi
+python3 -m rescue.viz all --out viz                                # 7 张功能示意图 + 2 段搜救动画
+python3 -m rescue.viz gap --out viz                                # 只画某一项：mapping/astar/gap/person/control/comm/baro
+python3 -m rescue.viz animate --policy coop --out viz/coop.mp4     # 空地协同搜救过程（--policy ground_search 为仅地面搜索）
+python3 -m rescue.viz animate --policy coop --out viz/coop.gif     # 导出 gif，便于插入 PPT
+```
+
+示例输出见 [docs/figures/viz](docs/figures/viz)。
 
 ---
 
